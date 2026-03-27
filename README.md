@@ -1,121 +1,102 @@
 # B. de Medeiros' Claude Skills Collection
 
-This repository contains custom Claude skills designed to improve how Claude approaches different types of tasks. Each skill is a self-contained module that can be installed independently in Claude.ai or used via the Claude API or Claude Code. I have also bundled them into Claude plugins to make management easier.
+Custom Claude skills for enhanced reasoning, bioinformatics, and natural history museum workflows. Each skill is a self-contained module bundled into installable plugins.
 
-## What Are Claude Skills?
+## Available Plugins and Skills
 
-Claude skills are custom instructions that modify how Claude behaves in specific situations. They can:
-- Trigger automatically based on conversation patterns
-- Apply specialized reasoning frameworks
-- Enforce structured thinking processes
-- Add domain-specific knowledge and approaches
+### general-skills
 
-## Available Skills
+| Skill | Description |
+|-------|-------------|
+| **think-deeply** | Enforces multi-perspective analysis instead of automatic agreement/disagreement. Activates on confirmation-seeking questions, leading statements, and binary choices. [Docs →](./think_deeply/README.md) |
+| **extract-from-pdfs** | 8-step pipeline for extracting structured data from scientific PDFs using Claude's vision. Supports abstract filtering (Ollama/Haiku/Sonnet), external validation (GBIF, WFO, GeoNames, PubChem, NCBI), and export to multiple formats. [Docs →](./extract_from_pdfs/README.md) |
 
-### General Skills
+### bioinfo-skills
 
-#### think-deeply
-Enforces deeper analysis and multi-perspective thinking instead of automatic agreement/disagreement. Activates on confirmation-seeking questions, leading statements, and binary choices to provide nuanced, well-reasoned recommendations.
+| Skill | Description |
+|-------|-------------|
+| **phylo-from-buscos** | Generates phylogenomic workflows from genome assemblies using BUSCO/compleasm single-copy orthologs. Supports NCBI accessions, multiple schedulers (SLURM, PBS, local), concatenated and coalescent phylogenies. [Docs →](./phylo_from_buscos/README.md) |
+| **biogeobears** | Sets up BioGeoBEARS biogeographic analyses in R. Validates inputs, generates RMarkdown scripts, compares DEC/DIVALIKE/BAYAREALIKE models, and produces publication-ready ancestral range visualizations. [Docs →](./biogeobears/README.md) |
 
-[View detailed documentation →](./think_deeply/README.md)
+### museum-skills
 
-#### extract-from-pdfs
-Complete pipeline for extracting structured data from scientific PDFs using Claude's vision capabilities. Supports metadata organization from BibTeX/RIS/directories, abstract filtering with local models (Ollama) or Claude Haiku/Sonnet, PDF data extraction, JSON repair, external API validation (GBIF, WFO, GeoNames, PubChem, NCBI), and export to Python/R/CSV/Excel/SQLite. Includes validation workflow with precision/recall metrics for quality assurance.
+| Skill | Description |
+|-------|-------------|
+| **emu-bulk-upload** | Helps FMNH entomology curators bulk upload specimen data to the Emu database. Matches localities to existing records, creates new site records, and generates formatted upload tables. [Docs →](./Emu_bulk_upload_FMNH/SKILL.md) |
+| **entomological-labels** | Generates print-ready entomological specimen labels (.docx) from any tabular data. Interactively maps data to Darwin Core, assists with abbreviation, and produces label sheets. [Docs →](./entomological_labels/SKILL.md) |
 
-**Key Features:**
-- 8-step pipeline from PDF to validated database
-- Cost options: FREE (local Ollama), cheap (Haiku ~$0.25/M tokens), or accurate (Sonnet)
-- External database validation for taxonomy, geography, chemistry
-- Validation metrics (precision, recall, F1) with stratified sampling
-- Export to multiple formats with ready-to-use loading scripts
+### Anthropic Official Skills (submodule)
 
-[View detailed documentation →](./extract_from_pdfs/README.md)
+The `anthropic-skills/` directory contains Anthropic's official example skills as a git submodule, including **skill-creator**, document tools, and more.
 
-### Bioinformatics Skills
+## Installation
 
-#### phylo_from_buscos
-Generates complete phylogenomic workflows from genome assemblies using BUSCO/compleasm-based single-copy orthologs. Supports NCBI accessions, multiple scheduler types (SLURM, PBS, cloud, local), and produces both concatenated and coalescent phylogenies with quality control.
+### Claude Code — CLI, VS Code, or JetBrains (Recommended)
 
-[View detailed documentation →](./phylo_from_buscos/README.md)
+These instructions work the same way in:
+- **Claude Code CLI** — type commands directly in the terminal
+- **VS Code** — type commands in the Claude Code chat panel (or use `/plugins` to open the visual manager)
+- **JetBrains IDEs** — type commands in the Claude Code panel
 
-#### biogeobears
-Sets up phylogenetic biogeographic analyses using BioGeoBEARS in R. Validates and reformats input files (phylogenetic tree and geographic distribution data), generates organized analysis folders with RMarkdown scripts, guides parameter selection, and produces publication-ready visualizations of ancestral range reconstructions. Compares multiple biogeographic models (DEC, DIVALIKE, BAYAREALIKE with/without founder-event speciation).
+#### Step 1: Add the marketplace
 
-[View detailed documentation →](./biogeobears/README.md)
+You only need to do this once:
 
-### Anthropic Official Skills
-
-The `anthropic-skills/` directory contains the official skills repository from Anthropic as a git submodule. This includes:
-- **skill-creator**: A meta-skill that helps you create new custom skills
-- Other official example skills and templates
-
-To clone this repository with the submodule:
-```bash
-git clone --recurse-submodules <repository-url>
+```
+/plugin marketplace add brunoasm/my_claude_skills
 ```
 
-If you've already cloned without submodules:
+#### Step 2: Install the plugins you need
+
+Install all plugins:
+```
+/plugin install general-skills@brunoasm/my_claude_skills
+/plugin install bioinfo-skills@brunoasm/my_claude_skills
+/plugin install museum-skills@brunoasm/my_claude_skills
+```
+
+Or install only the ones you want — each plugin is independent.
+
+#### Install from a local clone
+
+```bash
+git clone --recurse-submodules https://github.com/brunoasm/my_claude_skills.git
+cd my_claude_skills
+```
+Then in Claude Code:
+```
+/plugin marketplace add .
+/plugin install general-skills@.
+```
+
+#### Scope options
+
+When installing, Claude Code will ask you to choose a scope:
+- **User** — available in all your projects
+- **Project** — shared with collaborators via `.claude/settings.json`
+- **Local** — only you, only this repo
+
+### Claude.ai (Web)
+
+1. Download the zip file for the desired skill from [releases](https://github.com/brunoasm/my_claude_skills/releases)
+2. Go to Claude.ai **Settings > Capabilities > Skills**
+3. Click **Upload Skill** and select the ZIP file
+4. Enable the skill
+
+### Clone with submodule
+
+To get the Anthropic example skills submodule:
+```bash
+git clone --recurse-submodules https://github.com/brunoasm/my_claude_skills.git
+```
+
+If you already cloned without it:
 ```bash
 git submodule update --init --recursive
 ```
 
-## Installation
-
-### For Claude Code (Recommended)
-
-#### Install All Plugins
-
-Install the entire marketplace with both plugin collections:
-
-```bash
-/plugin marketplace add brunoasm/my_claude_skills
-/plugin install general-skills@brunoasm/my_claude_skills
-/plugin install bioinfo-skills@brunoasm/my_claude_skills
-```
-
-#### Install Individual Plugins
-
-Install only the plugins you need:
-
-**For general skills only:**
-```bash
-/plugin marketplace add brunoasm/my_claude_skills
-/plugin install general-skills@brunoasm/my_claude_skills
-```
-
-**For bioinformatics skills only:**
-```bash
-/plugin marketplace add brunoasm/my_claude_skills
-/plugin install bioinfo-skills@brunoasm/my_claude_skills
-```
-
-#### Install from Local Clone
-
-```bash
-git clone https://github.com/brunoasm/my_claude_skills.git
-cd my_claude_skills
-/plugin marketplace add .
-/plugin install general-skills@.
-/plugin install bioinfo-skills@.
-```
-
-All installed skills will be automatically available in Claude Code.
-
-### For Claude.ai (Web/Mobile Apps)
-
-1. Go to [releases](https://github.com/brunoasm/my_claude_skills/releases) and download the zip file for the desired skill.
-3. Go to Claude.ai Settings > Capabilities > Skills
-4. Click "Upload Skill" and select the ZIP file
-5. Enable the skill
-
-### For Claude API
-
-Download and uncompress the desired skill zip file from [releases](https://github.com/brunoasm/my_claude_skills/releases).
-
-Place the `SKILL.md` file and associated files from each skill directory in your skills configuration according to your API integration setup. Consult the Claude API documentation for skill configuration details.
-
 ## Resources
 
-- [Claude Skills Documentation](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)
+- [Claude Code Plugins Documentation](https://code.claude.com/docs/en/plugins.md)
+- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills.md)
 - [Claude.ai](https://claude.ai)
-- [Anthropic Research](https://www.anthropic.com/research)

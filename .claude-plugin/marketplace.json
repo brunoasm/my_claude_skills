@@ -28,6 +28,16 @@
         "./phylo_from_buscos",
         "./biogeobears"
       ]
+    },
+    {
+      "name": "museum-skills",
+      "description": "Museum collection management skills for FMNH entomology workflows",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./Emu_bulk_upload_FMNH",
+        "./entomological_labels"
+      ]
     }
   ]
 }
