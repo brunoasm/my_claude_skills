@@ -14,7 +14,25 @@ Help users prepare and upload entomological specimen data to the Emu collection 
 - User has a spreadsheet of specimen data that needs database preparation
 - Keywords: "bulk upload", "Emu", "upload specimens", "match sites", "prepare data"
 
-## Session start: privilege gating
+## Session start
+
+### File discovery
+
+At the start of a session, search the working directory for files the user may have already placed there for this workflow:
+- Look for `.xlsx` files (likely user specimen data)
+- Look for `.csv` files (likely Emu sites exports)
+
+If any are found, list them and confirm with the user:
+
+> I found these files in the working directory:
+> - `Weevil_data.xlsx` (xlsx, 245 KB)
+> - `US_sites_export.csv` (csv, 12 MB)
+>
+> Is `Weevil_data.xlsx` your specimen data file and `US_sites_export.csv` your Emu sites export? Or should I look elsewhere?
+
+This avoids asking the user to provide file paths they've already placed in the working folder. If no relevant files are found, proceed normally by asking for them in Steps 1 and 2.
+
+### Privilege gating
 
 Before any work, ask the user:
 
@@ -28,7 +46,7 @@ Record the answer. It determines how upload steps are handled later:
 
 ### Step 1: Ingest user data
 
-Ask the user for their specimen data file (xlsx format). The user can upload/attach the file directly or provide a path. If uploaded, save it to `/tmp/` first (e.g., `/tmp/emu_user_specimens.xlsx`). Run:
+Ask the user for their specimen data file (xlsx format). The user can upload/attach the file directly or provide a path. If the file was already identified during file discovery, use it directly. If uploaded, save it to `/tmp/` first (e.g., `/tmp/emu_user_specimens.xlsx`). Run:
 
 ```bash
 python3 scripts/parse_user_data.py <user_file.xlsx> /tmp/emu_user_sites.json
@@ -43,7 +61,7 @@ Present a summary:
 
 ### Step 2: Ingest Emu sites export
 
-Ask the user for their Emu sites export (CSV). The user can upload/attach the file directly or provide a path. If uploaded, save it to `/tmp/` (e.g., `/tmp/emu_sites_export.csv`).
+Ask the user for their Emu sites export (CSV). The user can upload/attach the file directly or provide a path. If the file was already identified during file discovery, use it directly. If uploaded, save it to `/tmp/` (e.g., `/tmp/emu_sites_export.csv`).
 
 If they don't have one, first analyze the user's data from Step 1 and suggest the most efficient search criteria for Emu. For example:
 - All specimens from one country → search by country
