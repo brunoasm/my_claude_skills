@@ -293,9 +293,9 @@ def main():
 
     # Summary
     already_matched = sum(1 for r in results if r["match_status"] == "already_matched")
-    perfect_parents = sum(1 for r in results if r.get("parent_search", {}).get("status") == "perfect")
-    partial_parents = sum(1 for r in results if r.get("parent_search", {}).get("status") == "partial")
-    no_parent = sum(1 for r in results if r.get("parent_search", {}).get("status") == "not_found")
+    perfect_parents = sum(1 for r in results if (r.get("parent_search") or {}).get("status") == "perfect")
+    partial_parents = sum(1 for r in results if (r.get("parent_search") or {}).get("status") == "partial")
+    no_parent = sum(1 for r in results if (r.get("parent_search") or {}).get("status") == "not_found")
 
     print(f"\nParent finding results:")
     print(f"  Already matched (have IRN):    {already_matched}")

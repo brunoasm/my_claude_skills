@@ -107,36 +107,51 @@ def deduplicate_upload_rows(rows_with_meta):
 
 def write_upload_xlsx(rows_with_meta, output_path, batch_num):
     """Write a bulk upload xlsx file."""
+    # Filter out columns that are entirely blank across all data rows
+    active_columns = []
+    for emu_field, user_name in UPLOAD_COLUMNS:
+        has_data = any(
+            entry["row"].get(emu_field) is not None and entry["row"].get(emu_field) != ""
+            for entry in rows_with_meta
+        )
+        if has_data:
+            active_columns.append((emu_field, user_name))
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = f"Sites Batch {batch_num}"
 
     # Row 1: user-friendly names
-    for col_idx, (emu_field, user_name) in enumerate(UPLOAD_COLUMNS, 1):
+    for col_idx, (emu_field, user_name) in enumerate(active_columns, 1):
         cell = ws.cell(row=1, column=col_idx, value=user_name)
         cell.fill = GREEN_FILL
 
     # Row 2: Emu field names
-    for col_idx, (emu_field, _) in enumerate(UPLOAD_COLUMNS, 1):
+    for col_idx, (emu_field, _) in enumerate(active_columns, 1):
         cell = ws.cell(row=2, column=col_idx, value=emu_field)
         cell.fill = GREEN_FILL
 
     # Data rows starting at row 3
     for row_idx, entry in enumerate(rows_with_meta, 3):
         row = entry["row"]
-        for col_idx, (emu_field, _) in enumerate(UPLOAD_COLUMNS, 1):
+        for col_idx, (emu_field, _) in enumerate(active_columns, 1):
             val = row.get(emu_field)
             if val is not None:
                 ws.cell(row=row_idx, column=col_idx, value=val)
 
     # Auto-adjust column widths
-    for col_idx in range(1, len(UPLOAD_COLUMNS) + 1):
+    for col_idx in range(1, len(active_columns) + 1):
         max_len = 0
         for row in ws.iter_rows(min_col=col_idx, max_col=col_idx, max_row=ws.max_row):
             for cell in row:
                 if cell.value:
                     max_len = max(max_len, len(str(cell.value)))
         ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = min(max_len + 2, 30)
+
+    if active_columns != [(f, n) for f, n in UPLOAD_COLUMNS]:
+        removed = set(f for f, _ in UPLOAD_COLUMNS) - set(f for f, _ in active_columns)
+        if removed:
+            print(f"  Removed {len(removed)} empty column(s): {', '.join(sorted(removed))}")
 
     wb.save(output_path)
     return len(rows_with_meta)

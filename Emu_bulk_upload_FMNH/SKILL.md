@@ -28,7 +28,7 @@ Record the answer. It determines how upload steps are handled later:
 
 ### Step 1: Ingest user data
 
-Ask the user for their specimen data file (xlsx format). Run:
+Ask the user for their specimen data file (xlsx format). The user can upload/attach the file directly or provide a path. If uploaded, save it to `/tmp/` first (e.g., `/tmp/emu_user_specimens.xlsx`). Run:
 
 ```bash
 python3 scripts/parse_user_data.py <user_file.xlsx> /tmp/emu_user_sites.json
@@ -43,7 +43,7 @@ Present a summary:
 
 ### Step 2: Ingest Emu sites export
 
-Ask the user for their Emu sites export (CSV). If they don't have one, teach them how to download it:
+Ask the user for their Emu sites export (CSV). The user can upload/attach the file directly or provide a path. If uploaded, save it to `/tmp/` (e.g., `/tmp/emu_sites_export.csv`). If they don't have one, teach them how to download it:
 
 > In Emu, go to the Sites module. Run a search for the relevant records (e.g., all sites for a country). Then use File > Export to save as CSV. Make sure to include these columns: irn, LocContinent, LocCountry, LocProvinceStateTerritory, LocDistrictCountyShire, LocTownship, LocPreciseLocation, LocElevationASLFromMt, LocElevationASLToMt, LocElevationFromFt, LocElevationToFt, LatPreferredCentroidLatDec, LatPreferredCentroidLongDec, SitSiteNumber (if available).
 
@@ -127,7 +127,9 @@ If all sites matched, skip to Step 8.
 python3 scripts/generate_bulk_upload.py /tmp/emu_parents.json /tmp/emu_upload/
 ```
 
-This creates `sites_upload_batch_N.xlsx` files.
+This creates `sites_upload_batch_N.xlsx` files. Columns that are entirely blank across all rows are automatically removed from the output to keep the table clean.
+
+Present the output file path to the user clearly (see "File outputs" in interaction guidelines).
 
 **For users WITH bulk upload privileges**:
 > Upload instructions (placeholder — to be detailed later):
@@ -158,7 +160,7 @@ The `irn_mapping.json` should be created by Claude with this format:
 
 The output xlsx will have a `ColSiteRef.irn` column inserted after `SitSiteNumber` with the same green fill color.
 
-Deliver this file to the user.
+Present the output file path to the user clearly (see "File outputs" in interaction guidelines).
 
 ## Communication guidelines
 
@@ -167,6 +169,42 @@ Deliver this file to the user.
 - Flag typos and discrepancies clearly with your assessment
 - For large numbers of matches, group by status and only detail the ambiguous ones
 - Always tell the user how many sites remain to process after each decision
+
+## User interaction guidelines
+
+### Structured choices
+When asking the user to choose between options, present numbered choices on separate lines so they are easy to tap or select:
+
+```
+1. Yes
+2. No
+```
+
+For near-match review, present each match with clear options:
+```
+**Site 3**: "Cochise County" vs "Chochise County" (score 87, likely typo)
+1. Accept match (use Emu record IRN 45678)
+2. Reject match (create new record)
+```
+
+For the privilege gating question at session start, present as:
+```
+Do you have Emu bulk upload privileges?
+1. Yes
+2. No (not sure = no)
+```
+
+### File inputs
+When asking the user for a file (specimen xlsx, Emu CSV export):
+- Tell them they can **upload/attach the file directly** in the chat, or provide a file path
+- If the user uploads a file in chat, save it to `/tmp/` with a descriptive name (e.g., `/tmp/emu_user_specimens.xlsx`) before running scripts
+- Confirm the file was received: "Got your file — saved to `/tmp/emu_user_specimens.xlsx`"
+
+### File outputs
+When a file is produced (bulk upload table, final output table):
+- Always state the **full file path**
+- Tell the user the file is ready and where to find it
+- Example: "Bulk upload table ready: `/tmp/emu_upload/sites_upload_batch_1.xlsx`"
 
 ## Site hierarchy reference
 
