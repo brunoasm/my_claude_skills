@@ -82,46 +82,48 @@ Tell the user your specific search suggestion based on their data, then:
 
 #### Step-by-step guidance (option 2)
 
-Walk the user through each step one at a time. For each step, use the Read tool to show the screenshot, explain what it shows and what action to take, then wait for the user to confirm before proceeding to the next step.
+Walk the user through each step one at a time. For each step, provide the screenshot link and explanation, then wait for the user to confirm before proceeding to the next step.
+
+Screenshot base URL: `https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/`
 
 **Step 2a — Log in to Emu**
-Screenshot: `references/screenshots_sites_export/01_emu_login.png`
+[Screenshot: Emu login](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/01_emu_login.png)
 > Open KE EMu (FMNH). Enter your credentials — Host: `10.10.10.25`, Service: `emufmnh`. Click OK.
 
 **Step 2b — Select the Sites module**
-Screenshot: `references/screenshots_sites_export/02_select_sites_module.png`
+[Screenshot: module list](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/02_select_sites_module.png)
 > From the module list, click **Sites**.
 
 **Step 2c — You'll see the Site tab (default view)**
-Screenshot: `references/screenshots_sites_export/03_sites_search_site_tab.png`
+[Screenshot: Site tab](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/03_sites_search_site_tab.png)
 > This is what you see when Sites opens — the Site tab with Record Classification and other fields. You need to switch to a different tab. Click the **Class: Political** tab at the bottom of the window.
 
 **Step 2d — Class: Political tab**
-Screenshot: `references/screenshots_sites_export/04_class_political_tab.png`
+[Screenshot: Class: Political tab](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/04_class_political_tab.png)
 > Now you see the Political Details fields: Country, PD2 (state/province), PD3 (county), etc. This is where you'll enter your search.
 
 **Step 2e — Enter search criteria**
-Screenshot: `references/screenshots_sites_export/05_enter_search_criteria.png`
+[Screenshot: entering search](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/05_enter_search_criteria.png)
 > [Claude tells the user exactly what to type and in which field, based on Step 1 data analysis. E.g., "Type 'United States' in the **Country** field" or "Type 'Arizona' in the **PD2** field"]. Then click **Search** at the bottom left.
 
 **Step 2f — Review search results**
-Screenshot: `references/screenshots_sites_export/06_search_results.png`
+[Screenshot: search results](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/06_search_results.png)
 > Your search results appear in Display mode. The status bar at the bottom shows the total number of matching sites (e.g., 218,294). Verify this looks reasonable for your search.
 
 **Step 2g — Open the Tools menu**
-Screenshot: `references/screenshots_sites_export/07_tools_menu.png`
+[Screenshot: Tools menu](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/07_tools_menu.png)
 > Click the **Tools** menu in the menu bar.
 
 **Step 2h — Select Reports**
-Screenshot: `references/screenshots_sites_export/08_select_reports.png`
+[Screenshot: Reports option](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/08_select_reports.png)
 > Click **Reports...** from the Tools menu.
 
 **Step 2i — Choose the Localities Insects report**
-Screenshot: `references/screenshots_sites_export/09_choose_localities_insects_report.png`
+[Screenshot: Reports dialog](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/09_choose_localities_insects_report.png)
 > In the Reports dialog, select **Localities Insects**, then click the **Report...** button at the bottom.
 
 **Step 2j — Find the exported file**
-Screenshot: `references/screenshots_sites_export/10_exported_file_in_shared_folder.png`
+[Screenshot: exported file in shared folder](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/10_exported_file_in_shared_folder.png)
 > The export may take several minutes for large datasets. When done, the CSV file appears in your shared folder. Provide its path back to me.
 
 If the search requires multiple exports (e.g., one per state), repeat steps 2e–2j for each.
