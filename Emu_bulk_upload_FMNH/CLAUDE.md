@@ -40,6 +40,7 @@ CLAUDE.md                          # This file
 SKILL.md                           # Interactive skill specification
 references/
   emu_field_mapping.md             # Field name mappings and conventions
+  screenshots_sites_export/        # Step-by-step Emu sites export screenshots (10 images)
 scripts/
   parse_user_data.py               # Extract site columns from user xlsx
   parse_emu_export.py              # Index Emu CSV export for matching

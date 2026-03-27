@@ -43,11 +43,72 @@ Present a summary:
 
 ### Step 2: Ingest Emu sites export
 
-Ask the user for their Emu sites export (CSV). The user can upload/attach the file directly or provide a path. If uploaded, save it to `/tmp/` (e.g., `/tmp/emu_sites_export.csv`). If they don't have one, teach them how to download it:
+Ask the user for their Emu sites export (CSV). The user can upload/attach the file directly or provide a path. If uploaded, save it to `/tmp/` (e.g., `/tmp/emu_sites_export.csv`).
 
-> In Emu, go to the Sites module. Run a search for the relevant records (e.g., all sites for a country). Then use File > Export to save as CSV. Make sure to include these columns: irn, LocContinent, LocCountry, LocProvinceStateTerritory, LocDistrictCountyShire, LocTownship, LocPreciseLocation, LocElevationASLFromMt, LocElevationASLToMt, LocElevationFromFt, LocElevationToFt, LatPreferredCentroidLatDec, LatPreferredCentroidLongDec, SitSiteNumber (if available).
+If they don't have one, first analyze the user's data from Step 1 and suggest the most efficient search criteria for Emu. For example:
+- All specimens from one country → search by country
+- Specimens from 2–3 states in one country → search by state (PD2), possibly multiple exports
+- Specimens spanning many countries → suggest country-level search per country, or broader continent search
 
-Parse the export:
+Then ask:
+
+> Do you know how to export sites from Emu, or would you like step-by-step guidance with screenshots?
+> 1. I know how — just give me the quick summary
+> 2. I need step-by-step guidance
+
+#### Quick summary (option 1)
+
+Tell the user your specific search suggestion based on their data, then:
+
+> In Emu, log in and go to the **Sites** module. In the Search window, click the **Class: Political** tab at the bottom. Type your search criteria (e.g., [Claude fills in based on user data]) in the appropriate field, then click **Search**. From the results, go to **Tools > Reports**, select the **"Localities Insects"** report, and click **Report...**. The exported CSV will appear in your shared folder.
+
+#### Step-by-step guidance (option 2)
+
+Walk the user through each step one at a time. For each step, use the Read tool to show the screenshot, explain what it shows and what action to take, then wait for the user to confirm before proceeding to the next step.
+
+**Step 2a — Log in to Emu**
+Screenshot: `references/screenshots_sites_export/01_emu_login.png`
+> Open KE EMu (FMNH). Enter your credentials — Host: `10.10.10.25`, Service: `emufmnh`. Click OK.
+
+**Step 2b — Select the Sites module**
+Screenshot: `references/screenshots_sites_export/02_select_sites_module.png`
+> From the module list, click **Sites**.
+
+**Step 2c — You'll see the Site tab (default view)**
+Screenshot: `references/screenshots_sites_export/03_sites_search_site_tab.png`
+> This is what you see when Sites opens — the Site tab with Record Classification and other fields. You need to switch to a different tab. Click the **Class: Political** tab at the bottom of the window.
+
+**Step 2d — Class: Political tab**
+Screenshot: `references/screenshots_sites_export/04_class_political_tab.png`
+> Now you see the Political Details fields: Country, PD2 (state/province), PD3 (county), etc. This is where you'll enter your search.
+
+**Step 2e — Enter search criteria**
+Screenshot: `references/screenshots_sites_export/05_enter_search_criteria.png`
+> [Claude tells the user exactly what to type and in which field, based on Step 1 data analysis. E.g., "Type 'United States' in the **Country** field" or "Type 'Arizona' in the **PD2** field"]. Then click **Search** at the bottom left.
+
+**Step 2f — Review search results**
+Screenshot: `references/screenshots_sites_export/06_search_results.png`
+> Your search results appear in Display mode. The status bar at the bottom shows the total number of matching sites (e.g., 218,294). Verify this looks reasonable for your search.
+
+**Step 2g — Open the Tools menu**
+Screenshot: `references/screenshots_sites_export/07_tools_menu.png`
+> Click the **Tools** menu in the menu bar.
+
+**Step 2h — Select Reports**
+Screenshot: `references/screenshots_sites_export/08_select_reports.png`
+> Click **Reports...** from the Tools menu.
+
+**Step 2i — Choose the Localities Insects report**
+Screenshot: `references/screenshots_sites_export/09_choose_localities_insects_report.png`
+> In the Reports dialog, select **Localities Insects**, then click the **Report...** button at the bottom.
+
+**Step 2j — Find the exported file**
+Screenshot: `references/screenshots_sites_export/10_exported_file_in_shared_folder.png`
+> The export may take several minutes for large datasets. When done, the CSV file appears in your shared folder. Provide its path back to me.
+
+If the search requires multiple exports (e.g., one per state), repeat steps 2e–2j for each.
+
+#### Parse the export
 
 ```bash
 python3 scripts/parse_emu_export.py <emu_export.csv> /tmp/emu_index.json
