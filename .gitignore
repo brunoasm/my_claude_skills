@@ -1,24 +1,2 @@
-# Claude Code files
-.claude/
-.claude_history
-.clinerules
-
-# Operating System files
 .DS_Store
-Thumbs.db
-
-# Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Skill development reference materials
-phylo_from_buscos/info_to_craft_skill/
-
-# Python files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+*/skill_building_docs/
