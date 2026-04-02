@@ -34,13 +34,21 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
    ```
    https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=expenses
    ```
-   Parse to understand existing records and the receipt numbers already used.
+   Parse to understand existing records and the receipt numbers already used. **Analyze patterns** in existing records to learn Fund and GL code assignment conventions — e.g., which vendors consistently map to which funds and GL codes. Use these precedents when proposing values for new receipts rather than defaulting to a single fund.
 
-4. **Scan receipts folder**: List files in `{working_folder}/{year}/receipts/`. Identify:
+4. **Read past supplements**: List and read existing supplement PDFs in `{working_folder}/{year}/supplements/` to learn default patterns for entertainment supplement fields (Persons Involved, Business Purpose). For example, grocery store purchases may consistently use a standard lab group description while restaurant meals may list named attendees. Use these patterns as defaults when proposing supplement data for new entertainment expenses.
+
+5. **Scan receipts folder**: List files in `{working_folder}/{year}/receipts/`. Identify:
    - Highest existing receipt number (pattern: `YYXXX_...`)
    - Any unnumbered files (those not matching the `YYXXX_` prefix pattern)
 
-5. **Report status**:
+6. **Read all unnumbered files**: Proactively read the contents of every unnumbered file before presenting anything to the user. Files may have misleading names (e.g., `receipts_2026.pdf`, `Pcard Missing Receipt Form.pdf`). Classify each file by inspection:
+   - **Normal receipt**: proceed with processing
+   - **Duplicate**: matches an already-numbered receipt — flag for user but don't process
+   - **Non-receipt**: forms, summaries, statements — flag for user, skip processing
+   - **Unreadable**: image too low-resolution or corrupted — flag and ask user for details
+
+7. **Report status**:
    ```
    Year: {year}
    Spreadsheet: {url}
@@ -50,14 +58,16 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
    {list unnumbered filenames}
    ```
 
-6. Ask the user what they'd like to do: process new receipts, reconcile, check budgets, or generate a supplement.
+8. Ask the user what they'd like to do: process new receipts, reconcile, check budgets, or generate a supplement.
 
 ## Phase 1: Receipt Processing
 
 For each unnumbered file in the receipts folder:
 
 ### Step 1.1 — Read the receipt
-Use the Read tool to examine the PDF or image. Extract:
+The file was already read during session start (step 6). Use the extracted contents. If the file was an image too low-resolution to read, acknowledge this immediately and ask the user for: vendor name, amount, date, and description. Do not guess from unreadable images.
+
+From the receipt contents, extract:
 - Vendor name
 - Date of purchase
 - Total amount (including tax)
@@ -75,22 +85,22 @@ Fill in all 10 columns of the expenses tab:
 
 | Field | How to determine |
 |-------|-----------------|
-| Expense | Brief description of what was purchased |
+| Expense | Brief description of what was purchased. For refunds/credits, match the original expense name from the spreadsheet followed by "(refund)" — e.g., "Claude subscription for students (refund)", not a generic description |
 | Vendor | Vendor/merchant name from receipt |
 | Cost | Total amount as `$X.XX` (negative for returns/credits) |
 | date | Purchase date in `D-Mon-YYYY` format (e.g., `15-Mar-2026`) |
 | method | Default `p-card` unless user says otherwise |
-| Fund | Ask user — common values: `startup`, `SeedFunds` |
-| GL code | Propose based on `references/gl_codes.md` (consult ALL codes, not just commonly used ones), confirm with user |
+| Fund | Propose based on patterns learned from existing spreadsheet records for the same vendor or expense type. Only ask the user if no clear precedent exists |
+| GL code | Propose based on `references/gl_codes.md` (consult ALL codes, not just commonly used ones) AND patterns from existing spreadsheet records. Only ask the user if no clear precedent exists |
 | receipt_number | The `YYXXX` number assigned in Step 1.2 |
 | notes | Leave empty unless something notable |
 | request reimbursement | Leave empty unless user specifies |
 
 ### Step 1.4 — Entertainment check
-If the GL code is an entertainment code (6455, 6460, 6470, 6475), collect additional information for the supplement form:
+If the GL code is an entertainment code (6455, 6460, 6470, 6475), collect supplement form fields. Use patterns learned from past supplements (read during session start, step 4) to propose defaults:
 - **Location**: venue name and city (often derivable from receipt)
-- **Persons Involved**: ask user for each attendee's name, title, and company/institution
-- **Business Purpose**: ask user for a brief description of the meeting purpose
+- **Persons Involved**: propose based on patterns from past supplements for similar expense types — e.g., grocery/snack purchases may consistently use a standard lab group description, while restaurant meals list named attendees. Only ask the user to confirm or correct, not to provide from scratch
+- **Business Purpose**: propose based on past supplement patterns for the same venue or expense type. Only ask to confirm
 - **Alcohol**: ask if alcohol was purchased (affects VP approval requirement)
 
 Store this supplement data for Phase 4.
