@@ -81,7 +81,7 @@ Fill in all 10 columns of the expenses tab:
 | date | Purchase date in `D-Mon-YYYY` format (e.g., `15-Mar-2026`) |
 | method | Default `p-card` unless user says otherwise |
 | Fund | Ask user — common values: `startup`, `SeedFunds` |
-| GL code | Propose based on `references/gl_codes.md`, confirm with user |
+| GL code | Propose based on `references/gl_codes.md` (consult ALL codes, not just commonly used ones), confirm with user |
 | receipt_number | The `YYXXX` number assigned in Step 1.2 |
 | notes | Leave empty unless something notable |
 | request reimbursement | Leave empty unless user specifies |
