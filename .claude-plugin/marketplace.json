@@ -5,18 +5,19 @@
     "email": "bdemedeiros@fieldmuseum.org"
   },
   "metadata": {
-    "description": "Bruno de Medeiros' curated collection of custom Claude skills for enhanced reasoning, deeper analysis, and bioinformatics",
+    "description": "Bruno de Medeiros' curated collection of custom Claude skills for enhanced reasoning, deeper analysis, bioinformatics, and accounting",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "general-skills",
-      "description": "Custom general skills to improve claude outputs",
+      "description": "Custom general skills for improved reasoning, data extraction, and accounting",
       "source": "./",
       "strict": false,
       "skills": [
         "./think_deeply",
-        "./extract_from_pdfs"
+        "./extract_from_pdfs",
+        "./accounting"
       ]
     },
     {

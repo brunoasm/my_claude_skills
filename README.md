@@ -1,6 +1,6 @@
 # B. de Medeiros' Claude Skills Collection
 
-Custom Claude skills for enhanced reasoning, bioinformatics, and natural history museum workflows. Each skill is a self-contained module bundled into installable plugins.
+Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and natural history museum workflows. Each skill is a self-contained module bundled into installable plugins.
 
 ## Available Plugins and Skills
 
@@ -10,6 +10,7 @@ Custom Claude skills for enhanced reasoning, bioinformatics, and natural history
 |-------|-------------|
 | **think-deeply** | Enforces multi-perspective analysis instead of automatic agreement/disagreement. Activates on confirmation-seeking questions, leading statements, and binary choices. [Docs →](./think_deeply/README.md) |
 | **extract-from-pdfs** | 8-step pipeline for extracting structured data from scientific PDFs using Claude's vision. Supports abstract filtering (Ollama/Haiku/Sonnet), external validation (GBIF, WFO, GeoNames, PubChem, NCBI), and export to multiple formats. [Docs →](./extract_from_pdfs/README.md) |
+| **accounting** | Processes procurement card receipts, tracks expenses in Google Sheets, reconciles records, and generates entertainment supplement tables. [Docs →](./accounting/SKILL.md) |
 
 ### bioinfo-skills
 
