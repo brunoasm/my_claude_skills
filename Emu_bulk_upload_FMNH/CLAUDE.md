@@ -46,7 +46,7 @@ scripts/
   deduplicate_sites.py             # Deduplicate user sites
   match_sites.py                   # Match sites by coordinates or name
   find_parents.py                  # Recursive parent finding
-  generate_bulk_upload.py          # Create bulk upload xlsx tables
+  generate_bulk_upload.py          # Create bulk upload CSV tables
   finalize_user_table.py           # Add IRN column to user table
 ```
 

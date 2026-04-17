@@ -55,8 +55,8 @@ Screenshots are at: `https://github.com/brunoasm/my_claude_skills/blob/main/Emu_
 | 2a | [01_emu_login.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/01_emu_login.png) | Open KE EMu (FMNH). Host: `10.10.10.25`, Service: `emufmnh`. Click OK. |
 | 2b | [02_select_sites_module.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/02_select_sites_module.png) | From the module list, click **Sites**. |
 | 2c | [03_sites_search_site_tab.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/03_sites_search_site_tab.png) | Default view when Sites opens. Click **Class: Political** tab at the bottom. |
-| 2d | [04_class_political_tab.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/04_class_political_tab.png) | Political Details fields: Country, PD2, PD3. Enter your search here. |
-| 2e | [05_enter_search_criteria.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/05_enter_search_criteria.png) | Type search criteria in the appropriate field. Click **Search**. |
+| 2d | [04_enter_search_criteria.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/04_enter_search_criteria.png) | In the **Class: Political** tab, type search criteria in the appropriate field (Country, PD2, PD3). |
+| 2e | [05_class_political_tab.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/05_class_political_tab.png) | Click **Search** at the bottom left to run the query. |
 | 2f | [06_search_results.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/06_search_results.png) | Results in Display mode. Check total count in status bar. |
 | 2g | [07_tools_menu.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/07_tools_menu.png) | Click **Tools** menu. |
 | 2h | [08_select_reports.png](https://github.com/brunoasm/my_claude_skills/blob/main/Emu_bulk_upload_FMNH/references/screenshots_sites_export/08_select_reports.png) | Click **Reports...**. |
@@ -125,7 +125,7 @@ Creates xlsx tables for new site records.
 python3 scripts/generate_bulk_upload.py /tmp/emu_parents.json /tmp/emu_upload/
 ```
 
-Output: `sites_upload_batch_N.xlsx`. Entirely blank columns are auto-removed.
+Output: `sites_upload_batch_N.csv`. Entirely blank columns are auto-removed.
 
 ### finalize_user_table.py
 

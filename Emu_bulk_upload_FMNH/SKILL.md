@@ -259,4 +259,4 @@ For near-match review:
 
 ### File outputs
 - Always state the **full file path**
-- Example: "Bulk upload table ready: `/tmp/emu_upload/sites_upload_batch_1.xlsx`"
+- Example: "Bulk upload table ready: `/tmp/emu_upload/sites_upload_batch_1.csv`"

@@ -80,7 +80,7 @@ These fields form a hierarchy from most general to most precise. In Emu, each si
 |-------|----------------|-------------|-------------|
 | `ColSiteRef.irn` | — | `ColSiteRef.irn` | Site IRN — inserted into user table after sites are matched/created in Emu |
 | — | `irn` | — | Site IRN as it appears in Emu CSV export |
-| — | — | `PolParent` | Parent site IRN used in bulk upload of new sites |
+| — | — | `PolParentRef.irn` | Parent site IRN used in bulk upload of new sites |
 
 ---
 
