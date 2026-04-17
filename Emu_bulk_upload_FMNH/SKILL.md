@@ -16,10 +16,9 @@ Help users prepare and upload entomological specimen data to the Emu collection 
 
 ## Key reference files
 
-- `references/Emu_upload_default.xlsx` — The Emu upload template (54 columns, 3 modules)
-- `references/emu_field_reference.md` — Complete field reference with descriptions
+- `references/Emu_upload_default.xlsx` — The Emu upload template (49 columns, 3 modules)
+- `references/emu_field_reference.md` — Complete field reference with descriptions, export name mappings, and normalization rules
 - `references/phase1_sites.md` — Sites phase detailed reference (scripts, matching, export guide)
-- `references/emu_field_mapping.md` — Field name normalization rules
 
 ## Session start
 

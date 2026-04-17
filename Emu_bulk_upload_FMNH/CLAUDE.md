@@ -21,7 +21,7 @@ Taxonomy, collector parties, and other dependent records.
 
 ## Data conventions
 
-- The Emu upload template is at `references/Emu_upload_default.xlsx` (54 columns, 3 modules).
+- The Emu upload template is at `references/Emu_upload_default.xlsx` (49 columns, 3 modules).
 - Template format: Row 1 = user-friendly field names, Row 2 = Emu field names, Row 3 = example, data starts Row 4.
 - Column colors indicate Emu modules: green (`FFCCFFCC`) = Sites, gray (`FFC0C0C0`) = Events, tan (`FFFFCC99`) = Catalog.
 - User xlsx field names use `_tab` suffixes (e.g., `LocCountry_tab`); Emu CSV exports use bare names (`LocCountry`).
@@ -37,8 +37,7 @@ SKILL.md                           # Interactive skill specification (main orche
 README.md                          # Author credits
 references/
   Emu_upload_default.xlsx          # Emu upload template (54 columns, the target format)
-  emu_field_reference.md           # Complete field reference (all modules, all columns)
-  emu_field_mapping.md             # Field name normalization rules
+  emu_field_reference.md           # Complete field reference (all modules, export mappings, normalization rules)
   phase1_sites.md                  # Sites phase detailed reference
   screenshots_sites_export/        # Step-by-step Emu sites export screenshots (10 images)
 scripts/
@@ -59,6 +58,6 @@ Note: `skill_building_docs/` is local-only (not tracked in git). It contains exa
 
 ## TODO
 
-- [ ] Confirm Emu field names for unmapped template columns: UTM Northing (col 13), UTM Easting (col 14), UTM Zone (col 15), Other numbers 1 (col 24), Other numbers 2 (col 25), Expedition (col 26). These columns exist in the template with user-friendly names but their Row 2 Emu database field names are currently unknown.
+- [x] ~~Confirm Emu field names for unmapped template columns~~ — Resolved: UTM and Expedition columns removed from template; Other numbers 1 mapped to `ColOtherNumbers_tab`.
 - [ ] Create `references/phase2_events.md` when Events phase is implemented
 - [ ] Create `references/phase3_catalog.md` when Catalog phase is implemented
