@@ -23,18 +23,37 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
 
 1. **Detect year**: Determine the current year from today's date. Confirm with the user: "Working on **{year}** expenses — correct?"
 
-2. **Load spreadsheet config**: Check for `spreadsheet_links.yaml` in the working folder (`/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts`). If the file is missing or has no entry for this year, ask the user for the Google Sheet link and save it:
+2. **Get spreadsheet link**: Check for `spreadsheet_links.yaml` in the working folder (`/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts`).
+   - If a link for this year **already exists** in the YAML, show it and ask: "Using this spreadsheet — correct? {url}"
+   - If the file is missing or has no entry for this year, ask the user for the Google Sheet link.
+   Save/update the link:
    ```yaml
    {year}:
      spreadsheet_id: "{extracted_id}"
      url: "{full_url}"
    ```
 
-3. **Read current expenses**: Fetch the expenses tab via WebFetch CSV export:
-   ```
-   https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=expenses
-   ```
-   Parse to understand existing records and the receipt numbers already used. **Analyze patterns** in existing records to learn Fund and GL code assignment conventions — e.g., which vendors consistently map to which funds and GL codes. Use these precedents when proposing values for new receipts rather than defaulting to a single fund.
+3. **Read current expenses**: Detect the environment by checking whether the working folder exists at the Mac path (use `Bash` to test). Then:
+
+   - **On cowork (local Mac — working folder exists)**:
+     Open the spreadsheet in Chrome so the user can interact with it:
+     ```bash
+     open -a "Google Chrome" "{full_url}"
+     ```
+     Also fetch the expenses tab via WebFetch CSV export:
+     ```
+     https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=expenses
+     ```
+     If the WebFetch CSV export fails or returns an auth/login page, note this and ask the user to manually export the sheet as CSV and provide the file path.
+
+   - **Not on cowork (cloud/remote — working folder absent)**:
+     Fetch directly via WebFetch CSV export:
+     ```
+     https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=expenses
+     ```
+     If this fails, ask the user to paste the spreadsheet data or provide a downloaded CSV file.
+
+   Parse the expenses data to understand existing records and the receipt numbers already used. **Analyze patterns** in existing records to learn Fund and GL code assignment conventions — e.g., which vendors consistently map to which funds and GL codes. Use these precedents when proposing values for new receipts rather than defaulting to a single fund.
 
 4. **Read past supplements**: List and read existing supplement PDFs in `{working_folder}/{year}/supplements/` to learn default patterns for entertainment supplement fields (Persons Involved, Business Purpose). For example, grocery store purchases may consistently use a standard lab group description while restaurant meals may list named attendees. Use these patterns as defaults when proposing supplement data for new entertainment expenses.
 
