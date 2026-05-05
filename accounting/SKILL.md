@@ -23,7 +23,10 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
 
 1. **Detect year**: Determine the current year from today's date. Confirm with the user: "Working on **{year}** expenses — correct?"
 
-2. **Get spreadsheet link**: Check for `spreadsheet_links.yaml` in the working folder (`/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts`). Regardless of whether the file exists, **always ask the user for the Google Sheet link** at the start of each session (the link may change year to year or the file may be stale). Save the link:
+2. **Get spreadsheet link**: Check for `spreadsheet_links.yaml` in the working folder (`/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts`).
+   - If a link for this year **already exists** in the YAML, show it and ask: "Using this spreadsheet — correct? {url}"
+   - If the file is missing or has no entry for this year, ask the user for the Google Sheet link.
+   Save/update the link:
    ```yaml
    {year}:
      spreadsheet_id: "{extracted_id}"
