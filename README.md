@@ -10,6 +10,7 @@ Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and nat
 |-------|-------------|
 | **think-deeply** | Enforces multi-perspective analysis instead of automatic agreement/disagreement. Activates on confirmation-seeking questions, leading statements, and binary choices. [Docs →](./think_deeply/README.md) |
 | **extract-from-pdfs** | 8-step pipeline for extracting structured data from scientific PDFs using Claude's vision. Supports abstract filtering (Ollama/Haiku/Sonnet), external validation (GBIF, WFO, GeoNames, PubChem, NCBI), and export to multiple formats. [Docs →](./extract_from_pdfs/README.md) |
+| **document-ocr** | Converts scanned PDFs and document images into clean Markdown using docling for layout (figures, tables, reading order) plus a vision-language OCR model. Preserves multi-column order, diacritics, and figures. Supports local vLLM/Ollama and cloud vision APIs (OpenAI, Anthropic). [Docs →](./document_ocr/SKILL.md) |
 | **accounting** | Processes procurement card receipts, tracks expenses in Google Sheets, reconciles records, and generates entertainment supplement tables. [Docs →](./accounting/SKILL.md) |
 
 ### bioinfo-skills

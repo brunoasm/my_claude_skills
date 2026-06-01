@@ -1,0 +1,21 @@
+name: document_ocr
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  # PDF rendering / image handling
+  - pymupdf
+  - pillow
+  - pyyaml
+  - requests
+  - tqdm
+  - pip:
+      # structured markdown from born-digital PDFs
+      - pymupdf4llm
+      # layout detection (figures, tables, reading order)
+      - docling>=2.0
+      # per-page language detection
+      - lingua-language-detector
+      # optional cloud OCR backend (anthropic-docling)
+      - anthropic

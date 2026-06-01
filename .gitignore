@@ -1,2 +1,4 @@
 .DS_Store
 */skill_building_docs/
+__pycache__/
+*.pyc
