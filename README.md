@@ -8,7 +8,6 @@ Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and nat
 
 | Skill | Description |
 |-------|-------------|
-| **think-deeply** | Enforces multi-perspective analysis instead of automatic agreement/disagreement. Activates on confirmation-seeking questions, leading statements, and binary choices. [Docs →](./think_deeply/README.md) |
 | **extract-from-pdfs** | 8-step pipeline for extracting structured data from scientific PDFs using Claude's vision. Supports abstract filtering (Ollama/Haiku/Sonnet), external validation (GBIF, WFO, GeoNames, PubChem, NCBI), and export to multiple formats. [Docs →](./extract_from_pdfs/README.md) |
 | **document-ocr** | Converts scanned PDFs and document images into clean Markdown using docling for layout (figures, tables, reading order) plus a vision-language OCR model. Preserves multi-column order, diacritics, and figures. Supports local vLLM/Ollama and cloud vision APIs (OpenAI, Anthropic). [Docs →](./document_ocr/SKILL.md) |
 | **accounting** | Processes procurement card receipts, tracks expenses in Google Sheets, reconciles records, and generates entertainment supplement tables. [Docs →](./accounting/SKILL.md) |
@@ -26,10 +25,6 @@ Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and nat
 |-------|-------------|
 | **emu-bulk-upload** | Helps FMNH entomology curators bulk upload specimen data to the Emu database. Matches localities to existing records, creates new site records, and generates formatted upload tables. [Docs →](./Emu_bulk_upload_FMNH/SKILL.md) |
 | **entomological-labels** | Generates print-ready entomological specimen labels (.docx) from any tabular data. Interactively maps data to Darwin Core, assists with abbreviation, and produces label sheets. [Docs →](./entomological_labels/SKILL.md) |
-
-### Anthropic Official Skills (submodule)
-
-The `anthropic-skills/` directory contains Anthropic's official example skills as a git submodule, including **skill-creator**, document tools, and more.
 
 ## Installation
 
@@ -62,7 +57,7 @@ Or install only the ones you want — each plugin is independent.
 #### Install from a local clone
 
 ```bash
-git clone --recurse-submodules https://github.com/brunoasm/my_claude_skills.git
+git clone https://github.com/brunoasm/my_claude_skills.git
 cd my_claude_skills
 ```
 Then in Claude Code:
@@ -84,18 +79,6 @@ When installing, Claude Code will ask you to choose a scope:
 2. Go to Claude.ai **Settings > Capabilities > Skills**
 3. Click **Upload Skill** and select the ZIP file
 4. Enable the skill
-
-### Clone with submodule
-
-To get the Anthropic example skills submodule:
-```bash
-git clone --recurse-submodules https://github.com/brunoasm/my_claude_skills.git
-```
-
-If you already cloned without it:
-```bash
-git submodule update --init --recursive
-```
 
 ## Resources
 

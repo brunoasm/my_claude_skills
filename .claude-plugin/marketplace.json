@@ -15,7 +15,6 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./think_deeply",
         "./extract_from_pdfs",
         "./document_ocr",
         "./accounting"
