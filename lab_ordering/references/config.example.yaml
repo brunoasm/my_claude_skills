@@ -1,0 +1,20 @@
+# Copy this file to ~/.config/lab_ordering/config.yaml and fill in real values.
+# The real config is NEVER committed to git.
+
+identity:
+  name: "Your Full Name"
+  email: "you@example.org"
+
+# Pritzker Lab ordering form (the forms.gle short link or full viewform URL)
+pritzker_form_url: "https://forms.gle/REPLACE_ME"
+
+# Amazon Business landing/cart URL (org-specific if applicable)
+amazon_business_url: "https://www.amazon.com/business"
+
+# Known grants/funds. `name` is what you say; `detail` is the exact string
+# that goes in a PO field / "Account to be charged".
+funding_sources:
+  - name: "Example Startup Fund"
+    detail: "STARTUP-0000 — Example Startup Fund"
+  - name: "Example NSF Grant"
+    detail: "NSF-0000000 — Example Grant Title"
