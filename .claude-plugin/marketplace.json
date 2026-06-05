@@ -17,7 +17,8 @@
       "skills": [
         "./extract_from_pdfs",
         "./document_ocr",
-        "./accounting"
+        "./accounting",
+        "./lab_ordering"
       ]
     },
     {
