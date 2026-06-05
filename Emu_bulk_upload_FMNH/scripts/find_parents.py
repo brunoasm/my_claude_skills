@@ -185,8 +185,14 @@ def find_parent(user_site, emu_data):
     """Find the best parent for a user site by walking up the hierarchy.
 
     Returns:
-        dict with parent_irn, search_level, candidates, and classification
-        (perfect, partial, not_found, needs_creation)
+        dict with parent_irn, search_level, candidates, chain, and classification
+        (perfect, partial, not_found).
+
+    The `chain` field enumerates every level BELOW the found parent and AT/ABOVE
+    the user's most-precise level where the user has a value. Each entry is
+    classified as `exists` (matched in Emu with IRN) or `needs_creation`. Claude
+    uses this chain to assemble the final upload chain (plus the Precise Locality
+    terminal node for primary coordinates).
     """
     most_precise = get_most_precise_level(user_site)
     if most_precise < 0:
@@ -194,6 +200,7 @@ def find_parent(user_site, emu_data):
             "status": "not_found",
             "message": "No hierarchy fields available",
             "candidates": [],
+            "chain": [],
         }
 
     # Start searching one level above the most precise field
@@ -211,31 +218,59 @@ def find_parent(user_site, emu_data):
 
         best = candidates[0]
 
+        # Build the intermediate chain: every level strictly BELOW the parent
+        # level up to and including most_precise, where the user has a value.
+        chain = []
+        for i in range(level_idx + 1, most_precise + 1):
+            f = HIERARCHY_FIELDS[i]
+            val = user_site.get(f)
+            if val is None or not str(val).strip():
+                continue
+            chain.append({
+                "hierarchy_field": f,
+                "name": val,
+                "status": "needs_creation",  # Claude may override to "exists" after matching
+                "irn": None,
+            })
+
         # Classify
         if best["score"] >= 90 and not best["has_lower_level_data"]:
-            return {
-                "status": "perfect",
-                "parent_irn": best["irn"],
-                "search_level": field,
-                "best_candidate": best,
-                "candidates": candidates[:5],
-                "message": f"Perfect parent match at {field} level",
-            }
+            status = "perfect"
+            message = f"Perfect parent match at {field} level"
         elif best["score"] >= 60:
-            return {
-                "status": "partial",
-                "parent_irn": best["irn"],
-                "search_level": field,
-                "best_candidate": best,
-                "candidates": candidates[:5],
-                "message": f"Partial parent match at {field} level — needs user confirmation",
-            }
+            status = "partial"
+            message = f"Partial parent match at {field} level — needs user confirmation"
+        else:
+            continue
 
-    # No parent found at any level
+        return {
+            "status": status,
+            "parent_irn": best["irn"],
+            "search_level": field,
+            "best_candidate": best,
+            "candidates": candidates[:5],
+            "chain": chain,
+            "message": message,
+        }
+
+    # No parent found at any level — entire hierarchy the user has needs creation
+    chain = []
+    for i in range(0, most_precise + 1):
+        f = HIERARCHY_FIELDS[i]
+        val = user_site.get(f)
+        if val is None or not str(val).strip():
+            continue
+        chain.append({
+            "hierarchy_field": f,
+            "name": val,
+            "status": "needs_creation",
+            "irn": None,
+        })
     return {
         "status": "not_found",
         "message": "No matching parent found at any hierarchy level",
         "candidates": [],
+        "chain": chain,
         "needs_creation": True,
     }
 

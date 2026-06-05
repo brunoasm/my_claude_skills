@@ -12,9 +12,9 @@ The Sites phase takes the user's specimen data (already mapped to Emu template f
 5. Creates bulk upload tables for new sites
 6. Finalizes the user table with site IRNs
 
-## Site hierarchy
+## Source hierarchy (user input)
 
-From most general to most precise:
+User input is flat — one column per hierarchy level. From most general to most precise:
 
 | Level | Canonical field | Emu CSV field | User xlsx field |
 |-------|----------------|---------------|-----------------|
@@ -24,6 +24,34 @@ From most general to most precise:
 | 3 | `LocDistrictCountyShire` | `LocDistrictCountyShire` | `LocDistrictCountyShire_tab` |
 | 4 | `LocTownship` | `LocTownship` | `LocTownship_tab` |
 | 5 | `LocPreciseLocation` | `LocPreciseLocation` | `LocPreciseLocation` |
+
+## Target schema (Emu bulk upload CSV)
+
+The bulk upload CSV is **record-oriented**: one row per Emu node. Each user site explodes into a chain of rows (one per missing intermediate), parented via `PolParentRef.irn`.
+
+Columns (blank columns dropped at write time):
+
+- `SitRecordClassification` — `Terrestrial` for insects (`Marine` / `Freshwater` are valid too).
+- `PolPoliticalRank` — rank of this node only (`Country`, `State`, `County`, `City`, `Village`, `Town`, `Precise Locality`, `LMA`, `Plot/Transect`, `Sample Area`, `pd2`, `pd3`, `pd4`, …). See `references/political_ranks.md` for the complete list.
+- `PolLocality` — name of this node only. Blank for the unnamed Precise Locality row carrying primary coordinates.
+- `LocElevationASLFromMt` / `LocElevationASLToMt` / `LocElevationASLFromFt` / `LocElevationASLToFt`
+- `LatLatitudeDecimal_nesttab` / `LatLongitudeDecimal_nesttab` (the upload form uses the `_nesttab` suffix)
+- `PolParentRef.irn` — parent IRN, or a `__PENDING_Bx_Ry__` placeholder when the parent will be created by an earlier batch.
+
+## Primary coordinates → unnamed Precise Locality rule
+
+When the user's coordinates are *primary* (came from their own sampling metadata), the deepest row of the chain is an **unnamed Precise Locality** carrying coords + elevation; its parent is the most specific named, non-georeferenced node (often a Village, Town, or Sample Area). If that named parent does not yet exist in Emu, it is created without coordinates in an earlier batch.
+
+Ask the user at session start whether their coordinates are primary. If they say no (coordinates are inherited/centroid), skip the unnamed-precise-locality split and keep the named node itself as the deepest row.
+
+## PolPoliticalRank vocabulary
+
+See `references/political_ranks.md` for the full allowed list and OSM → rank mapping. Ranks are assigned per named level using OpenStreetMap via `scripts/osm_rank_lookup.py`:
+
+- **high confidence** → auto-apply suggested rank
+- **medium / low confidence** → present candidates and confirm with the user
+
+Intermediate nodes where the user has no value at that level are simply skipped (no node created).
 
 ## Site fields used for matching
 
@@ -106,26 +134,44 @@ python3 scripts/match_sites.py /tmp/emu_dedup.json /tmp/emu_index.json /tmp/emu_
 
 ### find_parents.py
 
-Finds parent records for unmatched sites.
+Finds the nearest existing parent for each unmatched site AND emits the chain of intermediate nodes the user specified below that parent (each defaulting to `needs_creation`). Claude then checks each intermediate with `match_named_node` (see `match_sites.py`) to flip `needs_creation` → `exists` when a suitable existing node is found.
 
 ```bash
 python3 scripts/find_parents.py /tmp/emu_match.json /tmp/emu_index.json /tmp/emu_parents.json
 ```
 
 **Parent rules**:
-- Parents cannot have a `SitSiteNumber`
-- Parents must be at a higher hierarchy level
-- Parents should NOT have data below their hierarchy level
+- Parents cannot have a `SitSiteNumber`.
+- Parents must be at a higher hierarchy level than the child.
+- Parents must NOT have data below their own hierarchy level (enforced by `match_named_node`).
+- Every intermediate level the user provided must exist as a separate node. Missing intermediates are confirmed with the user one-by-one before being added to the upload plan.
+
+### osm_rank_lookup.py
+
+Suggests a `PolPoliticalRank` for a named locality by querying OpenStreetMap Nominatim.
+
+```bash
+python3 scripts/osm_rank_lookup.py "San Simon" "United States" --parent "Arizona" --lat 31.99 --lon -109.17
+```
+
+Returns `{suggested_rank, confidence, candidates, osm_evidence}`. Confidence `high` → auto-apply; `medium`/`low` → confirm with user.
 
 ### generate_bulk_upload.py
 
-Creates xlsx tables for new site records.
+Creates CSV tables for new Sites records from a resolved chains file.
 
 ```bash
-python3 scripts/generate_bulk_upload.py /tmp/emu_parents.json /tmp/emu_upload/
+python3 scripts/generate_bulk_upload.py /tmp/emu_site_chains.json /tmp/emu_upload/
 ```
 
-Output: `sites_upload_batch_N.csv`. Entirely blank columns are auto-removed.
+Input `chains.json` is assembled by Claude from `find_parents` output + OSM rank suggestions + user confirmations. Each chain is a list of `{rank, name, status, coords, elevation}` nodes anchored to a known `parent_irn`. See the docstring in the script for the full format.
+
+Output:
+- `sites_upload_batch_1.csv` — nodes that parent directly to an existing Emu record.
+- `sites_upload_batch_N.csv` — nodes that parent to a row in batch N-1 (placeholders `__PENDING_Bx_Ry__` are substituted after each batch is uploaded and the new IRNs come back).
+- `upload_metadata.json` — dependency map.
+
+Entirely blank columns are auto-removed.
 
 ### finalize_user_table.py
 

@@ -48,6 +48,16 @@ Record the answer. It determines how upload steps are handled later:
 - **With privileges**: walk through Emu upload steps directly
 - **Without privileges**: prepare tables and ask user to send them to their collection manager
 
+### Coordinate provenance
+
+Also ask once at session start:
+
+> Are the coordinates in your data from your own sampling metadata (i.e. primary coordinates, recorded at the sampling site), or inherited from named places (centroids / generic coordinates)?
+> 1. Primary — from sampling metadata
+> 2. Inherited / centroid
+
+If **primary**, the skill applies the unnamed-Precise-Locality rule: each specimen row with coordinates produces an unnamed `Precise Locality` node whose parent is the most specific named node (Village/Town/etc.). If **inherited**, coordinates stay attached to the named node directly.
+
 ---
 
 ## Step 1: Data intake and mapping
@@ -167,29 +177,52 @@ Review matches using your judgment (see `references/phase1_sites.md` § "Match r
 - **Near matches** (60–89): present comparison table, ask user to confirm/reject each
 - **No matches**: note for parent finding
 
-### Step 1.4: Find parents for unmatched sites
+### Step 1.4: Find parents and intermediate chain
 
 ```bash
 python3 scripts/find_parents.py /tmp/emu_match.json /tmp/emu_index.json /tmp/emu_parents.json
 ```
 
 Review parent results (see `references/phase1_sites.md` § "Parent rules"):
-- **Perfect parents** (score >= 90): proceed silently
-- **Partial parents**: present to user for confirmation
-- **No parent found**: flag for manual resolution
+- **Perfect parents** (score >= 90): proceed silently.
+- **Partial parents**: present to user for confirmation.
+- **No parent found**: flag for manual resolution.
 
-### Step 1.5: Summary and upload
+The output also includes a `chain` array for each unmatched site listing every intermediate level the user specified (default status `needs_creation`). For each intermediate, call `match_named_node` (from `scripts/match_sites.py`) against the Emu index — if it finds an existing node with no lower-level data, flip that chain entry's status to `exists` and record the IRN.
 
-Present summary: N matched, M new sites, P new parents.
+### Step 1.5: Rank assignment
 
-If new sites need creation:
+For each distinct (level, name) pair remaining as `needs_creation`, call:
+
 ```bash
-python3 scripts/generate_bulk_upload.py /tmp/emu_parents.json /tmp/emu_upload/
+python3 scripts/osm_rank_lookup.py "<name>" "<country>" --parent "<parent name>" [--lat L --lon M]
 ```
+
+- `confidence == high` → auto-apply the suggested rank, note it in the summary.
+- `confidence == medium` or `low`, or no result → present candidates to the user for confirmation. If no OSM hit at all, fall back to `pd2`/`pd3`/`pd4` by depth.
+
+### Step 1.6: Confirm intermediates and Paradise-style rows
+
+- **Intermediate confirmation.** For every `needs_creation` node, show its rank, name, and proposed parent, and ask the user to approve before including it in the upload plan.
+- **Paradise-style rows.** When a user row has a named locality with coordinates and no *more specific* name (e.g., "Paradise" with coords), ask:
+  > The coordinates for "Paradise" — do they refer to the named area broadly (town center / approximate location), or to a specific sampling site within the area?
+  > 1. Broadly (keep as a single named node with coords)
+  > 2. Specific site (split into named parent + unnamed Precise Locality child)
+  Apply the chosen treatment to that chain.
+
+### Step 1.7: Build chains and generate upload
+
+Assemble `/tmp/emu_site_chains.json` (see `scripts/generate_bulk_upload.py` docstring). Then:
+
+```bash
+python3 scripts/generate_bulk_upload.py /tmp/emu_site_chains.json /tmp/emu_upload/
+```
+
+Output is **always CSV** (`sites_upload_batch_N.csv`). Multi-batch output uses `__PENDING_Bx_Ry__` placeholders in `PolParentRef.irn`; after each batch uploads and new IRNs come back, substitute and proceed to the next batch.
 
 Handle upload based on user privileges (see `references/phase1_sites.md` § "Upload instructions").
 
-### Step 1.6: Finalize with IRNs
+### Step 1.8: Finalize with IRNs
 
 Once all sites have IRNs:
 ```bash

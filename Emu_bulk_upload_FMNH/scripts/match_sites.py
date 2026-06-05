@@ -287,6 +287,81 @@ def match_all_sites(dedup_data, emu_data):
     return results
 
 
+def match_named_node(name, hierarchy_field, emu_data, context=None,
+                     fuzzy_threshold=0.85):
+    """Match a single named parent node (e.g., "San Simon" as LocTownship).
+
+    A valid hit must:
+      - have a matching value at `hierarchy_field` (fuzzy),
+      - have no data in fields BELOW `hierarchy_field` (so it's a pure parent node),
+      - not carry a SitSiteNumber.
+
+    `context` is an optional dict of higher-level hierarchy fields the match
+    should also agree with (e.g., {"LocCountry": "United States",
+    "LocProvinceStateTerritory": "Arizona"}) to disambiguate common names.
+
+    Returns a list of candidate dicts sorted by score, or [] if nothing plausible.
+    """
+    context = context or {}
+    name_index = emu_data["name_indices"].get(hierarchy_field, {})
+    user_norm = normalize_text(name)
+
+    field_idx = HIERARCHY_FIELDS.index(hierarchy_field) if hierarchy_field in HIERARCHY_FIELDS else -1
+    if field_idx < 0:
+        return []
+
+    out = []
+    seen = set()
+    for emu_name, record_indices in name_index.items():
+        sim = fuzzy_ratio(user_norm, emu_name)
+        if sim < fuzzy_threshold:
+            continue
+        for idx in record_indices:
+            rec = emu_data["records"][idx]
+            irn = rec.get("irn")
+            if irn in seen:
+                continue
+            seen.add(irn)
+
+            # Exclude records with SitSiteNumber (those are specific sites, not parent nodes)
+            site_num = rec.get("SitSiteNumber")
+            if site_num and str(site_num).strip():
+                continue
+
+            # Reject records that carry data below this hierarchy level
+            has_lower = False
+            for j in range(field_idx + 1, len(HIERARCHY_FIELDS)):
+                v = rec.get(HIERARCHY_FIELDS[j])
+                if v and str(v).strip():
+                    has_lower = True
+                    break
+            if has_lower:
+                continue
+
+            # Check higher-level context agreement
+            context_ok = True
+            for k, v in context.items():
+                if not v:
+                    continue
+                emu_v = rec.get(k)
+                if emu_v and fuzzy_ratio(v, emu_v) < 0.75:
+                    context_ok = False
+                    break
+            if not context_ok:
+                continue
+
+            out.append({
+                "irn": irn,
+                "record_index": idx,
+                "name_similarity": round(sim, 3),
+                "emu_record": {k: v for k, v in rec.items()
+                               if k in HIERARCHY_FIELDS or k == "irn"},
+            })
+
+    out.sort(key=lambda c: -c["name_similarity"])
+    return out[:5]
+
+
 def main():
     if len(sys.argv) < 3:
         print(f"Usage: {sys.argv[0]} <dedup_sites.json> <emu_index.json> [output.json]")

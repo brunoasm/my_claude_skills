@@ -74,13 +74,25 @@ These fields form a hierarchy from most general to most precise. In Emu, each si
 |-----|--------------------|-------------------|----------------|----------------------|-------------|
 | 16 | Site Number | `SitSiteNumber` | `SitSiteNumber` | not in standard export | Emu site number identifier. Parent records should NOT have this field. |
 
+### Bulk-upload-only fields (record-oriented schema)
+
+The sites bulk upload CSV is **record-oriented**: one row per Emu node (not one column per hierarchy level). The hierarchy-level fields above (`LocContinent`, `LocCountry`, …, `LocPreciseLocation`) describe the *user's source data*; the bulk-upload CSV itself uses the fields below.
+
+| Field | Description |
+|-------|-------------|
+| `SitRecordClassification` | Record class, typically `Terrestrial` (also: `Marine`, `Freshwater`). |
+| `PolPoliticalRank` | The rank of this single node (e.g., `Country`, `State`, `County`, `City`, `Village`, `Town`, `Precise Locality`, `LMA`, `Plot/Transect`, `Sample Area`, `pd2`, `pd3`, `pd4`). Controlled vocabulary — see `references/political_ranks.md`. |
+| `PolLocality` | The name of this node only (not a full hierarchy). Blank for unnamed Precise Locality rows carrying primary coordinates. |
+| `LatLatitudeDecimal_nesttab` | Decimal latitude. Note the `_nesttab` suffix — differs from the `LatLatitude` form used in the user template. |
+| `LatLongitudeDecimal_nesttab` | Decimal longitude. Same note. |
+| `PolParentRef.irn` | IRN of the parent node in Emu. For cross-batch chains, placeholders like `__PENDING_Bx_Ry__` are used and substituted after each batch is uploaded. |
+
 ### Output-only fields (added by the skill)
 
 | Field | Emu CSV export | Bulk upload | Description |
 |-------|----------------|-------------|-------------|
 | `ColSiteRef.irn` | — | `ColSiteRef.irn` | Site IRN — inserted into user table after sites are matched/created in Emu |
 | — | `irn` | — | Site IRN as it appears in Emu CSV export |
-| — | — | `PolParentRef.irn` | Parent site IRN used in bulk upload of new sites |
 
 ---
 
