@@ -25,7 +25,6 @@ Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and nat
 | Skill | Description |
 |-------|-------------|
 | **emu-bulk-upload** | Helps FMNH entomology curators bulk upload specimen data to the Emu database. Matches localities to existing records, creates new site records, and generates formatted upload tables. [Docs →](./Emu_bulk_upload_FMNH/SKILL.md) |
-| **entomological-labels** | Generates print-ready entomological specimen labels (.docx) from any tabular data. Interactively maps data to Darwin Core, assists with abbreviation, and produces label sheets. [Docs →](./entomological_labels/SKILL.md) |
 
 ## Installation
 

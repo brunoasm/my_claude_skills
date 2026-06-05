@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Bruno de Medeiros' curated collection of custom Claude skills for enhanced reasoning, deeper analysis, bioinformatics, and accounting",
-    "version": "1.0.0"
+    "version": "1.4.0"
   },
   "plugins": [
     {
@@ -37,8 +37,7 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./Emu_bulk_upload_FMNH",
-        "./entomological_labels"
+        "./Emu_bulk_upload_FMNH"
       ]
     }
   ]
