@@ -9,24 +9,33 @@ description: "Prepare Field Museum NIRC ID badge requests (Scientific Affiliate,
 
 Prepare a complete, validated NIRC badge request, prefill the live form, and stop for a curator to review and submit. **Never click Submit** — badge sponsorship is an accountable act by a named Museum staff person, and the final click is theirs.
 
-Form: https://docs.google.com/forms/d/e/REPLACE_ME/viewform
-
 Keywords: badge, badge renewal, NIRC, ID badge, building access, door access, room access, Access Control, Scientific Affiliate, Visitor badge, Contractor badge, West Lot parking, affiliate, research associate.
 
 ## Reference files
 
 - `references/form-fields.md` — every question in form order, required/optional, all dropdown and radio options, and the browser quirks encountered when filling it. Read this before collecting answers or touching the browser; the form has been revised since 2024 and this file is where changes get recorded.
+- `references/config.example.yaml` — placeholder config layout.
 
 ## Workflow
 
 | Step | Action |
 |---|---|
+| 0 | Load config — the form URL lives outside this repo |
 | 1 | Establish the requester's status — curator, other staff, or non-staff |
 | 2 | Confirm this form is the right channel at all |
 | 3 | Collect the field values (renewals carry forward) |
 | 4 | Validate against the rules that bounce requests |
 | 5 | Prefill the live form in the browser |
 | 6 | Hand off an answer sheet and stop |
+
+## Step 0 — Load config (bootstrap if missing)
+
+Read `~/.config/nirc_badge_request/config.yaml`.
+
+- If it exists, load `nirc_badge_form_url`, `nirc_key_form_url`, and `after_hours_approver`.
+- If it is missing, tell the user and walk them through creating it: copy the layout from `references/config.example.yaml`, ask for each value, and write the completed file to `~/.config/nirc_badge_request/config.yaml`. Never store these values in the skill repo.
+
+Where this file says "the approver" for after-hours access, use `after_hours_approver`.
 
 ## Step 1 — Establish who is asking
 
@@ -61,7 +70,7 @@ Raise each of these as a question rather than guessing:
 | Start date ≥ 7 days out | Access Control's stated lead time; same-day and next-day requests are usually refused |
 | Start date ≤ 2 weeks out | The form asks that requests not be submitted earlier than this |
 | After-hours/weekends on a Visitor badge | Not possible at all — this is a badge-type problem, not a checkbox |
-| After-hours/weekend approval | Requires the requester's supervisor or Philipp Heck in advance |
+| After-hours/weekend approval | Requires the requester's supervisor or `after_hours_approver` in advance |
 | After-hours reason field | Required even when no after-hours access is wanted; takes `N/A` |
 | Supervisor is Museum staff | With a real Museum extension or contact number |
 | West Lot parking on a Visitor badge | Needs prior approval |
@@ -72,7 +81,7 @@ A renewal requested well before expiry shortens the current term. Point this out
 
 ## Step 5 — Prefill the form in the browser
 
-Open the form in the user's Chrome and fill every field so the curator reviews a populated form rather than a list of values to retype. Google Forms is a custom-widget UI, so the mechanics matter:
+Open `nirc_badge_form_url` in the user's Chrome and fill every field so the curator reviews a populated form rather than a list of values to retype. Google Forms is a custom-widget UI, so the mechanics matter:
 
 - **Text, textarea, and date inputs are real inputs** — read the page for element refs and set them with `form_input`. Dates take `YYYY-MM-DD` and render as MM/DD/YYYY.
 - **Checkboxes and radios are DIVs.** `form_input` fails on them with "Element type DIV is not a supported form input" — click them instead, preferring element refs over coordinates.

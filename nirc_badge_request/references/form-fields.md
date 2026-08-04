@@ -1,6 +1,6 @@
 # NIRC Badge Request Form — field reference
 
-**Form URL:** https://docs.google.com/forms/d/e/REPLACE_ME/viewform
+**Form URL:** `nirc_badge_form_url` from `~/.config/nirc_badge_request/config.yaml` (see `config.example.yaml`). The live link is deliberately not stored in this repo.
 
 **Verified against the live form:** 2026-08-04. Google Forms does not expose prefill entry IDs for this form, so a prefilled URL cannot be constructed — drive the live form in the browser instead (see "Browser quirks" at the end of this file).
 
@@ -29,7 +29,7 @@
 | 7 | Is this a badge renewal? | No | Multiple choice | Yes · No |
 | 8 | For **Contractor** badge ONLY — Company name | No | Short answer | Leave blank unless badge type is Contractor. |
 | 9 | Hours needed — check all that apply | No | Checkbox | After Hours · Weekends. **After hours and/or weekend access cannot be added to a Visitor badge.** |
-| 10 | If you want the badgeholder to receive After Hours/Weekend Access, did you receive approval from your supervisor or Philipp Heck? | Yes | Multiple choice | "Do NOT add either After Hours or Weekends to their badge" · "Yes" |
+| 10 | If you want the badgeholder to receive After Hours/Weekend Access, did you receive approval from your supervisor or {`after_hours_approver`}? | Yes | Multiple choice | "Do NOT add either After Hours or Weekends to their badge" · "Yes" |
 | 11 | If after-hours/weekends are needed, provide the reason; otherwise put N/A | Yes | Short answer | Required regardless. Enter `N/A` when no after-hours access is requested. Added after the Sept 2024 version of the form. |
 | 12 | Is the badgeholder younger than 18? | No | Multiple choice | Yes · No |
 | 13 | Badge Start Date | Yes | Date (MM/DD/YYYY) | Access Control requests at least 7 days. |
@@ -38,7 +38,7 @@
 | 16 | Supervisor's extension of contact number | Yes | Short answer | **Must be a Museum staff person.** Museum extension is fine here. |
 | 17 | Emergency contact name | Yes | Short answer | Note the relationship if known, e.g. "Jane Doe (spouse)". |
 | 18 | Emergency phone number | Yes | Short answer | |
-| 19 | Please indicate rooms/specific room number(s) needed to access. | No | Short answer | Also where West Lot parking is requested. **West Lot parking cannot be added to a Visitor badge without prior approval.** Keys are requested separately via the NIRC Key Request Form. Useful to state elevators and rooms on separate lines, e.g. `Elevators: Botany Light Well Elevator for floor 2M` / `Rooms: 3rd floor, Insects Pinned Collection Mezzanine (2749/2740/2743)`. |
+| 19 | Please indicate rooms/specific room number(s) needed to access. | No | Short answer | Also where West Lot parking is requested. **West Lot parking cannot be added to a Visitor badge without prior approval.** Keys are requested separately via the NIRC Key Request Form (`nirc_key_form_url`). Useful to state elevators and rooms on separate lines, e.g. `Elevators: Botany Light Well Elevator for floor 2M` / `Rooms: 3rd floor, Insects Pinned Collection Mezzanine (2749/2740/2743)`. |
 
 ## Confirmation email
 
@@ -61,6 +61,6 @@ The form is a single page — there is no pagination. Submit and "Clear form" si
 
 ## Known people and roles
 
-- **Philipp Heck** — named on the form as an approver for after-hours/weekend access, alongside the requester's own supervisor.
+- **`after_hours_approver`** (from config) — named on the form as an approver for after-hours/weekend access, alongside the requester's own supervisor.
 - **Access Control** — the office that produces the badges and sets the 7-day lead time.
 - **HR** — owns Staff, Intern, and Volunteer badges. Those never go through this form.

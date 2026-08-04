@@ -1,0 +1,14 @@
+# Copy this file to ~/.config/nirc_badge_request/config.yaml and fill in real values.
+# The real config is NEVER committed to git.
+
+# The live NIRC Badge Request Google Form (full /viewform URL, or the forms.gle
+# short link). Ask Access Control or your department administrator for it.
+nirc_badge_form_url: "https://docs.google.com/forms/d/e/REPLACE_ME/viewform"
+
+# The separate NIRC Key Request Form, if you have the link. Badge requests may
+# name rooms but never grant keys — misrouted key asks get pointed here.
+nirc_key_form_url: "https://docs.google.com/forms/d/e/REPLACE_ME/viewform"
+
+# Who signs off on after-hours / weekend access, besides the badgeholder's own
+# supervisor. Named on the form itself.
+after_hours_approver: "Firstname Lastname"
