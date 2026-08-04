@@ -25,6 +25,7 @@ Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and nat
 | Skill | Description |
 |-------|-------------|
 | **emu-bulk-upload** | Helps FMNH entomology curators bulk upload specimen data to the Emu database. Matches localities to existing records, creates new site records, and generates formatted upload tables. [Docs →](./Emu_bulk_upload_FMNH/SKILL.md) |
+| **nirc-badge-request** | Prepares FMNH NIRC ID badge requests (Scientific Affiliate, Visitor, Contractor) and prefills the NIRC Badge Request Google Form for review. Gates on curator status, validates lead time and after-hours rules, and never submits. [Docs →](./nirc_badge_request/SKILL.md) |
 
 ## Installation
 
