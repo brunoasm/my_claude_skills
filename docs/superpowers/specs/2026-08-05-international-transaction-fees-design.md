@@ -194,10 +194,50 @@ gap:
 - Fee pairing is ambiguous or finds no candidate.
 - Self-validation against the summary block fails.
 
+## Missing-charge check
+
+A report lists every charge that posted, so it also reveals charges that were
+never recorded — the mirror image of the orphaned-receipt check Phase 3 already
+does. This catches a missed receipt within a statement cycle instead of at
+year-end reconciliation.
+
+**Inputs:** a parsed report, the expenses sheet already fetched at session start
+(as CSV), and a date window (default 5 days, since posting lags the transaction
+and the sheet records the purchase date).
+
+**Matching.** For each report charge — purchases *and* fee lines — look for a
+sheet row whose `Cost` equals the charge amount and whose `date` falls within the
+window of the charge's transaction date. Exactly one match claims that row.
+Where no exact match exists, retry within the window on **vendor token overlap
+alone**, which surfaces a row recorded with the wrong amount instead of
+misreporting it as absent.
+
+**Outputs**, each an explicit bucket rather than a single "missing" list:
+
+- `missing_from_sheet` — posted, not recorded. The actionable list.
+- `possible_amount_mismatch` — recorded, but the amount disagrees.
+- `ambiguous` — several sheet rows could be the same charge.
+- `rows_without_receipt_number` — matched, but the row has no receipt number, so
+  no receipt file can exist for it.
+
+**Surfaced in** Phase 3 reconciliation, with a count in the session-start status
+report so a gap is visible before processing begins.
+
+**Known limits**, which must be stated when reporting results rather than left
+for the user to discover:
+
+- A charge not yet processed is a true positive, not an error — early in a cycle
+  the list is *expected* to be long.
+- Only the cardholder's own charges appear in their report, so another
+  cardholder's spending is out of scope and its absence means nothing.
+- Aggregated sheet rows (a month of another person's spending recorded as one
+  total) cannot match individual charges and will surface as unmatched.
+
 ## Files to change
 
 - `accounting/SKILL.md` — new session-start step 7 and renumbering; new Phase 1
-  Step 1.3 and renumbering of 1.3–1.6; fee row convention; Phase 3 bullet.
+  Step 1.3 and renumbering of 1.3–1.6; fee row convention; Phase 3 bullets for
+  estimated fees and the missing-charge check.
 - `accounting/CLAUDE.md` — document `{year}/reports/` in the working-folder
   structure, note the XLSX-first precedence, and record that reports carry PII and
   never leave the working folder.
@@ -215,5 +255,5 @@ document, whose examples are deliberately structural rather than actual records.
 - No new GL code for fees.
 - No currency conversion by looked-up rate; the posted amount is authoritative.
 - No claiming of personal-card foreign fees on `reimbursement` rows.
-- Not implemented here: flagging charges that appear in a report with no receipt or
-  spreadsheet row. Worth doing, deliberately deferred to keep this change scoped.
+- The missing-charge check reports gaps; it never writes rows or invents receipt
+  numbers for them.
