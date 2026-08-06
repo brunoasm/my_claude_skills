@@ -61,8 +61,9 @@ transaction date matches, whose country is non-US, and whose USD amount times
 - `reason: "no_match"` — no candidate. Usually the parent is on an adjacent
   statement.
 
-`international_without_fee` lists non-US purchases with no fee line, which is
-the mirror-image anomaly.
+`international_without_fee` lists non-US purchases with no fee line, excluding
+any purchase already named as a candidate in `problems` (because a purchase
+counted there is not also double-reported as missing a fee).
 
 ## Self-validation
 
