@@ -156,6 +156,8 @@ def test_ambiguous_pairing_is_reported_not_guessed():
         assert len(problem["candidates"]) == 2
         # both candidates cost the same, so either assignment gives the same numbers
         assert problem["equivalent"] is True
+        # ambiguous candidates must not appear in international_without_fee
+        assert result["international_without_fee"] == []
 
 
 def test_fee_with_no_candidate_is_reported():

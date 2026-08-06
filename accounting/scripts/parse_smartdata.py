@@ -219,13 +219,17 @@ def parse_report(path):
     purchases = [t for t in transactions if t["description"] != FEE_DESCRIPTION]
     pairs, problems, unpaired = pair_fees(purchases, fees)
 
+    # Exclude purchases that are referenced in ambiguous problems from international_without_fee
+    ambiguous_candidates = {id(p) for problem in problems for p in problem["candidates"]}
+    truly_unpaired = [p for p in unpaired if id(p) not in ambiguous_candidates]
+
     return {
         "period": statement_period(detail),
         "purchases": purchases,
         "fees": fees,
         "pairs": pairs,
         "problems": problems,
-        "international_without_fee": [p for p in unpaired if is_international(p)],
+        "international_without_fee": [p for p in truly_unpaired if is_international(p)],
         "validation": validate(purchases, fees, summary),
     }
 
