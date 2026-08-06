@@ -23,47 +23,34 @@
 ### Task 1: Report parser core
 
 **Files:**
+- Create: `accounting/scripts/_smartdata_fixtures.py`
 - Create: `accounting/scripts/parse_smartdata.py`
 - Test: `accounting/scripts/test_parse_smartdata.py`
 
 **Interfaces:**
 - Consumes: nothing (first task)
-- Produces: `_clean(value) -> str`, `_number(value) -> Decimal`, `find_header_row(ws, first_header="Posting Date") -> int`, `parse_transactions(ws) -> list[dict]`, `statement_period(ws) -> str`, and module constants `FEE_DESCRIPTION`, `FEE_RATE`, `DATE_RE`, `DETAIL_SHEET`, `SUMMARY_SHEET`. Each transaction dict has keys `posting_date`, `transaction_date`, `description`, `location`, `country` (all `str`) and `original_amount`, `conversion_rate`, `amount` (all `Decimal`), plus `original_currency` (`str`).
+- Produces, from `parse_smartdata.py`: `_clean(value) -> str`, `_number(value) -> Decimal`, `find_header_row(ws, first_header="Posting Date") -> int`, `parse_transactions(ws) -> list[dict]`, `statement_period(ws) -> str`, and module constants `FEE_DESCRIPTION`, `FEE_RATE`, `DATE_RE`, `DETAIL_SHEET`, `SUMMARY_SHEET`. Each transaction dict has keys `posting_date`, `transaction_date`, `description`, `location`, `country` (all `str`) and `original_amount`, `conversion_rate`, `amount` (all `Decimal`), plus `original_currency` (`str`).
+- Produces, from `_smartdata_fixtures.py`: `pad(value) -> str`, `txn(posting, tdate, desc, loc, country, orig, cur, rate, usd) -> list`, `build_workbook(path, txn_rows=None, summary_row=None) -> Path`, and constants `DETAIL_HEADER`, `METADATA`, `ADDENDUM_ROWS`, `DEFAULT_TXNS`, `DEFAULT_SUMMARY`. Task 5's tests import these too — they live in their own module so that no test file imports another test file.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Create the shared fixture builders**
 
-Create `accounting/scripts/test_parse_smartdata.py`:
+Create `accounting/scripts/_smartdata_fixtures.py`:
 
 ```python
 #!/usr/bin/env python3
 """
-Self-tests for parse_smartdata.py.
+Synthetic SmartData report builders, shared by the scripts' self-tests.
 
-There is no pytest in this repo, so run this file directly:
+These mirror the real export's structure -- metadata rows, a newline-laden
+header, Level-3 addendum rows, whitespace-padded numbers -- so that tests never
+need a real statement. Every value here is invented; no real financial data or
+cardholder PII belongs in this repo.
 
-    python3 accounting/scripts/test_parse_smartdata.py
-
-Every fixture is built synthetically, mirroring the real export's structure --
-metadata rows, a newline-laden header, Level-3 addendum rows, whitespace-padded
-numbers -- so that no real financial data or cardholder PII is ever committed.
+This lives in its own module rather than in a test file so that no test file
+has to import another test file.
 """
 
-import sys
-import tempfile
-from decimal import Decimal
-from pathlib import Path
-
 import openpyxl
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from parse_smartdata import (  # noqa: E402
-    _clean,
-    _number,
-    find_header_row,
-    parse_transactions,
-    statement_period,
-)
 
 DETAIL_HEADER = [
     "\nPosting Date", "Transaction\nDate", "\nDescription", "\nLocation",
@@ -86,6 +73,7 @@ def pad(value):
 
 
 def txn(posting, tdate, desc, loc, country, orig, cur, rate, usd):
+    """Build one transaction row in the export's column order."""
     return [posting, tdate, desc, loc, country, pad(orig), cur, pad(rate), pad(usd)]
 
 
@@ -137,6 +125,42 @@ def build_workbook(path, txn_rows=None, summary_row=None):
 
     wb.save(path)
     return path
+```
+
+- [ ] **Step 2: Write the failing test**
+
+Create `accounting/scripts/test_parse_smartdata.py`:
+
+```python
+#!/usr/bin/env python3
+"""
+Self-tests for parse_smartdata.py.
+
+There is no pytest in this repo, so run this file directly:
+
+    python3 accounting/scripts/test_parse_smartdata.py
+
+Fixtures come from _smartdata_fixtures.py and are entirely synthetic, so no
+real financial data or cardholder PII is ever committed.
+"""
+
+import sys
+import tempfile
+from decimal import Decimal
+from pathlib import Path
+
+import openpyxl
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _smartdata_fixtures import build_workbook, pad, txn  # noqa: E402
+from parse_smartdata import (  # noqa: E402
+    _clean,
+    _number,
+    find_header_row,
+    parse_transactions,
+    statement_period,
+)
 
 
 def load(tmpdir, **kwargs):
@@ -220,12 +244,12 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 3: Run test to verify it fails**
 
 Run: `python3 accounting/scripts/test_parse_smartdata.py`
 Expected: FAIL — `ModuleNotFoundError: No module named 'parse_smartdata'`
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 4: Write minimal implementation**
 
 Create `accounting/scripts/parse_smartdata.py`:
 
@@ -338,15 +362,15 @@ def load_workbook(path):
         return openpyxl.load_workbook(path, data_only=True)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run test to verify it passes**
 
 Run: `python3 accounting/scripts/test_parse_smartdata.py`
 Expected: PASS — `6/6 passed`
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add accounting/scripts/parse_smartdata.py accounting/scripts/test_parse_smartdata.py
+git add accounting/scripts/_smartdata_fixtures.py accounting/scripts/parse_smartdata.py accounting/scripts/test_parse_smartdata.py
 git commit -m "feat(accounting): parse SmartData statement XLSX detail rows"
 ```
 
@@ -1003,7 +1027,7 @@ git commit -m "feat(accounting): record posted USD cost and 1% international fee
 - Test: `accounting/scripts/test_check_missing_receipts.py`
 
 **Interfaces:**
-- Consumes: from Task 2 — `parse_report(path) -> dict` and `FEE_DESCRIPTION`; from Task 1's test module — `build_workbook`, `txn`, `pad` (reused as fixture builders)
+- Consumes: from Task 2 — `parse_report(path) -> dict` and `FEE_DESCRIPTION`; from Task 1's `_smartdata_fixtures` module — `build_workbook`, `txn`
 - Produces: `parse_money(text) -> Decimal | None`, `parse_sheet_date(text) -> date | None`, `parse_report_date(text) -> date | None`, `tokens(name) -> set[str]`, `load_expenses(path) -> list[dict]`, `check(report, expenses, window_days=5) -> dict`, `main() -> int`. `check` returns keys `period`, `charges_checked`, `matched`, `missing_from_sheet`, `possible_amount_mismatch`, `ambiguous`, `rows_without_receipt_number`. Expense dicts have keys `expense`, `vendor`, `cost` (`Decimal | None`), `date` (`date | None`), `method`, `receipt_number`.
 
 - [ ] **Step 1: Write the failing test**
@@ -1029,6 +1053,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from _smartdata_fixtures import build_workbook, txn  # noqa: E402
 from check_missing_receipts import (  # noqa: E402
     check,
     load_expenses,
@@ -1037,7 +1062,6 @@ from check_missing_receipts import (  # noqa: E402
     tokens,
 )
 from parse_smartdata import parse_report  # noqa: E402
-from test_parse_smartdata import build_workbook, txn  # noqa: E402
 
 CSV_HEADER = ('"Expense","Vendor","Cost","date","method","Fund","GL code",'
               '"receipt_number","notes","request reimbursement"')
@@ -1566,6 +1590,6 @@ git commit -m "feat(accounting): surface unrecorded-charge check in reconciliati
 
 **Placeholder scan.** No TBD/TODO; every code step carries runnable code; the "verify against the real report" step states expected *shape* rather than figures, deliberately, so no real amounts enter the repo.
 
-**Type consistency.** `_clean`/`_number` return `str`/`Decimal` and are used as such throughout. `parse_report` keys (`period`, `purchases`, `fees`, `pairs`, `problems`, `international_without_fee`, `validation`) are identical in Task 2's implementation, Task 2's tests, Task 3's reference, and Task 4's prose. `problems` entries use `reason`/`candidates`/`equivalent` consistently. `validation` uses `ok`/`checks` with `name`/`expected`/`actual`/`ok`/`note` consistently. `fee_of` takes and returns `Decimal` everywhere. Task 5's `check` returns `period`/`charges_checked`/`matched`/`missing_from_sheet`/`possible_amount_mismatch`/`ambiguous`/`rows_without_receipt_number`, used identically in its tests, its CLI, Task 6's Phase 3 prose, and Task 6's reference table; expense rows use `expense`/`vendor`/`cost`/`date`/`method`/`receipt_number` in both `load_expenses` and `check`. Task 5 imports `FEE_DESCRIPTION` and `parse_report` from Task 2 under those exact names, and reuses `build_workbook`/`txn` from Task 1's test module.
+**Type consistency.** `_clean`/`_number` return `str`/`Decimal` and are used as such throughout. `parse_report` keys (`period`, `purchases`, `fees`, `pairs`, `problems`, `international_without_fee`, `validation`) are identical in Task 2's implementation, Task 2's tests, Task 3's reference, and Task 4's prose. `problems` entries use `reason`/`candidates`/`equivalent` consistently. `validation` uses `ok`/`checks` with `name`/`expected`/`actual`/`ok`/`note` consistently. `fee_of` takes and returns `Decimal` everywhere. Task 5's `check` returns `period`/`charges_checked`/`matched`/`missing_from_sheet`/`possible_amount_mismatch`/`ambiguous`/`rows_without_receipt_number`, used identically in its tests, its CLI, Task 6's Phase 3 prose, and Task 6's reference table; expense rows use `expense`/`vendor`/`cost`/`date`/`method`/`receipt_number` in both `load_expenses` and `check`. Task 5 imports `FEE_DESCRIPTION` and `parse_report` from Task 2 under those exact names, and reuses `build_workbook`/`txn` from Task 1's `_smartdata_fixtures` module — no test file imports another test file.
 
 **Amount comparison.** `check` compares `Decimal` to `Decimal` (`row["cost"] == charge["amount"]`), so `$12.50` from the sheet equals `12.50` from the report. Trailing-zero differences are not an issue because `Decimal("12.50") == Decimal("12.5")` is true.
