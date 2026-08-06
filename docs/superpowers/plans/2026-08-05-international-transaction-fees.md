@@ -6,7 +6,7 @@
 
 **Architecture:** A parser script turns a J.P. Morgan SmartData "Account Statement (Version 2)" XLSX into normalized transactions, pairs each `INTERNATIONAL TRANSACTION` fee line with the purchase that incurred it, and cross-checks its own parse against the statement's summary totals. A second script reuses that parser to compare posted charges against the expenses sheet and flag ones that were never recorded. The skill's prose (`SKILL.md`) calls the parser during session start, consults its output while processing each receipt, and runs the missing-charge check during reconciliation. A reference file carries the format details so `SKILL.md` stays readable.
 
-**Tech Stack:** Python 3 (`/Users/bruno/miniforge3/bin/python3`), `openpyxl` 3.1.5 (already installed), `decimal` from the standard library. No pytest in this repo — tests are plain scripts run with `python3`.
+**Tech Stack:** Python 3 (`python3` resolves to the user's miniforge install), `openpyxl` 3.1.5 (already installed), `decimal` from the standard library. No pytest in this repo — tests are plain scripts run with `python3`.
 
 ## Global Constraints
 
@@ -17,6 +17,7 @@
 - **Numeric cells are whitespace-padded strings**; summary figures also carry thousands separators.
 - Match the repo's script house style: `#!/usr/bin/env python3`, a module docstring documenting the format and its traps, `argparse` CLI.
 - Scripts live at `accounting/scripts/`, following `Emu_bulk_upload_FMNH/scripts/` and `document_ocr/scripts/`.
+- **No absolute personal paths in the repo.** Verification commands use `$REPO` (this checkout) and `$WORKING_FOLDER` (the accounts and receipts folder); set them in your shell before running. The accounting skill itself runs *from* the working folder and stores its location nowhere.
 
 ---
 
@@ -716,8 +717,9 @@ Expected: PASS — `16/16 passed`
 Run:
 
 ```bash
+# set once: REPO=<this checkout>  WORKING_FOLDER=<accounts_and_receipts folder>
 python3 accounting/scripts/parse_smartdata.py \
-  "/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts/2026/reports/2026_07.xlsx"
+  "$WORKING_FOLDER/2026/reports/2026_07.xlsx"
 ```
 
 Expected: every validation line reads `[ok]`, every fee appears under `paired fees:` with a plausible foreign amount and country, and **no** `ASK:` lines appear. Do not record the actual figures anywhere in the repo — this is a local check only. If any check reads `REVIEW`, stop and report it rather than adjusting the expected numbers to match.
@@ -833,8 +835,9 @@ written to exclude those fields from its output; keep it that way.
 Run:
 
 ```bash
-cd "/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts"
-python3 /Users/bruno/Documents/docs_macbookair2015/lab/software/my_claude_skills/accounting/scripts/parse_smartdata.py \
+# set once: REPO=<this checkout>  WORKING_FOLDER=<accounts_and_receipts folder>
+cd "$WORKING_FOLDER"
+python3 "$REPO/accounting/scripts/parse_smartdata.py" \
   2026/reports/2026_07.xlsx --json | head -20
 ```
 
@@ -1012,7 +1015,8 @@ its output.
 Run:
 
 ```bash
-cd /Users/bruno/Documents/docs_macbookair2015/lab/software/my_claude_skills
+# set once: REPO=<this checkout>  WORKING_FOLDER=<accounts_and_receipts folder>
+cd "$REPO"
 grep -nE 'step [0-9]|Step 1\.[0-9]|Phase [0-9]' accounting/SKILL.md
 ```
 
@@ -1454,11 +1458,12 @@ Expected: `9/9 passed` and `16/16 passed`. Running both confirms Task 5 did not 
 Run:
 
 ```bash
-cd "/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts"
+# set once: REPO=<this checkout>  WORKING_FOLDER=<accounts_and_receipts folder>
+cd "$WORKING_FOLDER"
 ID=$(python3 -c "import yaml;print(yaml.safe_load(open('spreadsheet_links.yaml'))[2026]['spreadsheet_id'])")
 curl -sL -o /tmp/expenses.csv \
   "https://docs.google.com/spreadsheets/d/$ID/gviz/tq?tqx=out:csv&sheet=expenses"
-python3 /Users/bruno/Documents/docs_macbookair2015/lab/software/my_claude_skills/accounting/scripts/check_missing_receipts.py \
+python3 "$REPO/accounting/scripts/check_missing_receipts.py" \
   2026/reports/2026_07.xlsx --expenses /tmp/expenses.csv
 rm -f /tmp/expenses.csv
 ```
@@ -1570,7 +1575,8 @@ numbers.
 Run:
 
 ```bash
-cd /Users/bruno/Documents/docs_macbookair2015/lab/software/my_claude_skills
+# set once: REPO=<this checkout>  WORKING_FOLDER=<accounts_and_receipts folder>
+cd "$REPO"
 grep -nE '^[0-9]+\. \*\*' accounting/SKILL.md
 python3 accounting/scripts/check_missing_receipts.py --help
 ```

@@ -10,8 +10,12 @@ Manages procurement card expense tracking for a Field Museum researcher. Process
 - **Rename files**: Use `Bash` with `mv` command.
 
 ## Working Folder
-The accounts and receipts base folder is at:
-`/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts`
+The skill runs **from** the accounts and receipts folder — that is all it needs
+to know. `{working_folder}` means the current directory, and every path below is
+relative to it. The folder's absolute location is deliberately not recorded in
+this repo; do not add it back, and do not search the filesystem for it. If the
+current directory does not look like the working folder, SKILL.md's Session
+Start asks the user to restart from the right one.
 
 Structure per year:
 - `{year}/receipts/` — numbered receipt files

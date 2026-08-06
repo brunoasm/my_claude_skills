@@ -21,9 +21,13 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
 
 ## Session Start
 
+**Run this skill from the accounts and receipts working folder.** Every path below is relative to it, and `{working_folder}` means that directory — the current one. The folder's location is deliberately not recorded in this repo.
+
+If the current directory holds neither `spreadsheet_links.yaml` nor a `{year}/` directory, this is the wrong folder: say so and ask the user to restart the session from the right one. Do not go searching the filesystem for it.
+
 1. **Detect year**: Determine the current year from today's date. Confirm with the user: "Working on **{year}** expenses — correct?"
 
-2. **Get spreadsheet link**: Check for `spreadsheet_links.yaml` in the working folder (`/Users/bruno/Documents/docs_macbookair2015/lab/Field Museum/accounts_and_receipts`).
+2. **Get spreadsheet link**: Check for `spreadsheet_links.yaml` in the working folder.
    - If a link for this year **already exists** in the YAML, show it and ask: "Using this spreadsheet — correct? {url}"
    - If the file is missing or has no entry for this year, ask the user for the Google Sheet link.
    Save/update the link:
@@ -33,9 +37,9 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
      url: "{full_url}"
    ```
 
-3. **Read current expenses**: Detect the environment by checking whether the working folder exists at the Mac path (use `Bash` to test). Then:
+3. **Read current expenses**: Detect the environment by testing whether this is a local Mac session — `command -v open` succeeds and the `{year}/receipts/` directory is present. Then:
 
-   - **On cowork (local Mac — working folder exists)**:
+   - **On cowork (local Mac)**:
      Open the spreadsheet in Chrome so the user can interact with it:
      ```bash
      open -a "Google Chrome" "{full_url}"
@@ -46,7 +50,7 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
      ```
      If the WebFetch CSV export fails or returns an auth/login page, note this and ask the user to manually export the sheet as CSV and provide the file path.
 
-   - **Not on cowork (cloud/remote — working folder absent)**:
+   - **Not on cowork (cloud/remote — no local receipts tree)**:
      Fetch directly via WebFetch CSV export:
      ```
      https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=expenses
