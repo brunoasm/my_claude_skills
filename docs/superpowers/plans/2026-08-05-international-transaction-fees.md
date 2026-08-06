@@ -630,13 +630,20 @@ def parse_report(path):
     purchases = [t for t in transactions if t["description"] != FEE_DESCRIPTION]
     pairs, problems, unpaired = pair_fees(purchases, fees)
 
+    # A purchase that is a candidate for an ambiguous fee is not "without a fee" --
+    # reporting it in both buckets tells the reader a charge has no fee while
+    # showing them its candidate fee.
+    candidates = {id(c) for problem in problems for c in problem["candidates"]}
+
     return {
         "period": statement_period(detail),
         "purchases": purchases,
         "fees": fees,
         "pairs": pairs,
         "problems": problems,
-        "international_without_fee": [p for p in unpaired if is_international(p)],
+        "international_without_fee": [
+            p for p in unpaired if is_international(p) and id(p) not in candidates
+        ],
         "validation": validate(purchases, fees, summary),
     }
 
