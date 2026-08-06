@@ -26,9 +26,13 @@ Traps this module exists to absorb:
     Location and Country.
 """
 
+import argparse
+import json
 import re
+import sys
 import warnings
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 import openpyxl
 
@@ -104,3 +108,167 @@ def load_workbook(path):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return openpyxl.load_workbook(path, data_only=True)
+
+
+def fee_of(amount):
+    """The international transaction fee on a posted USD amount: 1%, half-up."""
+    return (amount * FEE_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def is_international(txn):
+    """True when the report says the charge was processed outside the US.
+
+    Fee rows carry a blank Country, so they are not themselves international
+    purchases.
+    """
+    return txn["country"] not in ("", "UNITED STATES")
+
+
+def parse_summary(ws):
+    """Return the "Report Totals" figures, or None when absent."""
+    header_row = find_header_row(ws, "Account Name")
+    for row in ws.iter_rows(min_row=header_row + 1, values_only=True):
+        if not row:
+            continue
+        if _clean(row[0]) == "Report Totals":
+            cells = list(row) + [None] * (7 - len(row))
+            return {
+                "transaction_count": int(_number(cells[1])),
+                "transaction_amount": _number(cells[2]),
+                "payment_count": int(_number(cells[3])),
+                "payment_amount": _number(cells[4]),
+                "total_count": int(_number(cells[5])),
+                "total_amount": _number(cells[6]),
+            }
+    return None
+
+
+def pair_fees(purchases, fees):
+    """Attribute each fee line to the purchase that incurred it.
+
+    Fee rows carry no merchant name, so a fee pairs with a purchase when their
+    transaction dates match, the purchase is international, and 1% of the
+    purchase's USD amount equals the fee. Anything other than exactly one
+    candidate is returned as a problem for a human to resolve -- never guessed.
+    """
+    unpaired = list(purchases)
+    pairs, problems = [], []
+    for fee in fees:
+        candidates = [
+            p for p in unpaired
+            if p["transaction_date"] == fee["transaction_date"]
+            and is_international(p)
+            and fee_of(p["amount"]) == fee["amount"]
+        ]
+        if len(candidates) == 1:
+            unpaired.remove(candidates[0])
+            pairs.append({"fee": fee, "purchase": candidates[0]})
+        else:
+            problems.append({
+                "fee": fee,
+                "reason": "ambiguous" if candidates else "no_match",
+                "candidates": candidates,
+                "equivalent": bool(candidates)
+                and len({c["amount"] for c in candidates}) == 1,
+            })
+    return pairs, problems, unpaired
+
+
+def validate(purchases, fees, summary):
+    """Cross-check the parse against the statement's own summary totals."""
+    if summary is None:
+        return {"ok": False, "checks": [{
+            "name": "summary_present", "expected": "Report Totals row",
+            "actual": "not found", "ok": False,
+            "note": "counts and totals could not be cross-checked",
+        }]}
+
+    purchase_total = sum((p["amount"] for p in purchases), Decimal("0"))
+    fee_total = sum((f["amount"] for f in fees), Decimal("0"))
+    payment_note = (
+        "real payments and refunds also land in the statement's Payment bucket, "
+        "so a mismatch here means review, not a broken parse"
+    )
+    checks = [
+        {"name": "purchase_count", "expected": summary["transaction_count"],
+         "actual": len(purchases),
+         "ok": len(purchases) == summary["transaction_count"],
+         "note": "purchases parsed vs statement Transaction Count"},
+        {"name": "purchase_total", "expected": str(summary["transaction_amount"]),
+         "actual": str(purchase_total),
+         "ok": purchase_total == summary["transaction_amount"],
+         "note": "purchase sum vs statement Transaction Amount"},
+        {"name": "fee_count", "expected": summary["payment_count"],
+         "actual": len(fees), "ok": len(fees) == summary["payment_count"],
+         "note": payment_note},
+        {"name": "fee_total", "expected": str(summary["payment_amount"]),
+         "actual": str(fee_total), "ok": fee_total == summary["payment_amount"],
+         "note": payment_note},
+    ]
+    return {"ok": all(c["ok"] for c in checks), "checks": checks}
+
+
+def parse_report(path):
+    """Parse a report and pair its fees. Never returns cardholder PII."""
+    wb = load_workbook(path)
+    detail = wb[DETAIL_SHEET]
+    transactions = parse_transactions(detail)
+    summary = parse_summary(wb[SUMMARY_SHEET]) if SUMMARY_SHEET in wb.sheetnames else None
+
+    fees = [t for t in transactions if t["description"] == FEE_DESCRIPTION]
+    purchases = [t for t in transactions if t["description"] != FEE_DESCRIPTION]
+    pairs, problems, unpaired = pair_fees(purchases, fees)
+
+    return {
+        "period": statement_period(detail),
+        "purchases": purchases,
+        "fees": fees,
+        "pairs": pairs,
+        "problems": problems,
+        "international_without_fee": [p for p in unpaired if is_international(p)],
+        "validation": validate(purchases, fees, summary),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Parse a SmartData Account Statement XLSX and pair "
+                    "international transaction fees with their purchases.")
+    parser.add_argument("report", type=Path, help="path to a YYYY_MM.xlsx report")
+    parser.add_argument("--json", action="store_true",
+                        help="emit JSON instead of a human-readable summary")
+    args = parser.parse_args()
+
+    result = parse_report(args.report)
+
+    if args.json:
+        print(json.dumps(result, indent=2, default=str))
+        return 0 if result["validation"]["ok"] else 1
+
+    print(f"statement period: {result['period'] or 'unknown'}")
+    print(f"purchases: {len(result['purchases'])}   fee lines: {len(result['fees'])}")
+    print("validation:")
+    for check in result["validation"]["checks"]:
+        flag = "ok" if check["ok"] else "REVIEW"
+        print(f"  [{flag}] {check['name']}: expected {check['expected']}, "
+              f"got {check['actual']}")
+    if result["pairs"]:
+        print("paired fees:")
+        for pair in result["pairs"]:
+            p, f = pair["purchase"], pair["fee"]
+            print(f"  {p['description']} ({p['country']}) "
+                  f"{p['original_amount']} {p['original_currency']} "
+                  f"-> ${p['amount']}  fee ${f['amount']}")
+    for problem in result["problems"]:
+        fee = problem["fee"]
+        print(f"  ASK: fee ${fee['amount']} on {fee['transaction_date']} "
+              f"-> {problem['reason']} ({len(problem['candidates'])} candidates"
+              f"{', equivalent' if problem['equivalent'] else ''})")
+    for purchase in result["international_without_fee"]:
+        print(f"  ASK: international purchase with no fee line: "
+              f"{purchase['description']} ${purchase['amount']}")
+    return 0 if result["validation"]["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
