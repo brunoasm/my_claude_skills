@@ -365,7 +365,7 @@ def load_workbook(path):
 - [ ] **Step 5: Run test to verify it passes**
 
 Run: `python3 accounting/scripts/test_parse_smartdata.py`
-Expected: PASS — `6/6 passed`
+Expected: PASS — `7/7 passed`
 
 - [ ] **Step 6: Commit**
 
@@ -702,7 +702,7 @@ import openpyxl
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `python3 accounting/scripts/test_parse_smartdata.py`
-Expected: PASS — `15/15 passed`
+Expected: PASS — `16/16 passed`
 
 - [ ] **Step 5: Verify against the user's real report**
 
@@ -1440,7 +1440,7 @@ python3 accounting/scripts/test_check_missing_receipts.py
 python3 accounting/scripts/test_parse_smartdata.py
 ```
 
-Expected: `9/9 passed` and `15/15 passed`. Running both confirms Task 5 did not disturb Task 2.
+Expected: `9/9 passed` and `16/16 passed`. Running both confirms Task 5 did not disturb Task 2.
 
 - [ ] **Step 5: Verify against the user's real data**
 
