@@ -1368,11 +1368,14 @@ def check(report, expenses, window_days=DEFAULT_WINDOW_DAYS):
     } for txn in report["purchases"] + report["fees"]]
 
     unclaimed = list(expenses)
-    matched, mismatches, ambiguous, missing, no_receipt = [], [], [], [], []
+    matched, ambiguous, no_receipt, deferred = [], [], [], []
 
+    # Phase 1 -- exact amount within the date window, over EVERY charge, before
+    # any fuzzy matching. Resolving all exact matches first is what stops a row
+    # offered as a mismatch candidate from later being consumed as a different
+    # charge's confirmed match.
     for charge in charges:
         when = parse_report_date(charge["transaction_date"])
-
         exact = [r for r in unclaimed
                  if r["cost"] == charge["amount"] and _within(r["date"], when, window_days)]
         if len(exact) == 1:
@@ -1381,20 +1384,23 @@ def check(report, expenses, window_days=DEFAULT_WINDOW_DAYS):
             matched.append({"charge": charge, "row": row})
             if not row["receipt_number"]:
                 no_receipt.append({"charge": charge, "row": row})
-            continue
-        if len(exact) > 1:
+        elif exact:
             ambiguous.append({"charge": charge, "candidates": exact})
-            continue
+        else:
+            deferred.append((charge, when))
 
+    # Phase 2 -- vendor-word overlap, only for charges with no exact match and
+    # only over rows still unclaimed.
+    mismatches, missing = [], []
+    for charge, when in deferred:
         descriptor = tokens(charge["description"])
         near = [r for r in unclaimed
                 if _within(r["date"], when, window_days)
                 and (tokens(r["vendor"]) & descriptor or tokens(r["expense"]) & descriptor)]
         if near:
             mismatches.append({"charge": charge, "candidates": near})
-            continue
-
-        missing.append(charge)
+        else:
+            missing.append(charge)
 
     return {
         "period": report["period"],

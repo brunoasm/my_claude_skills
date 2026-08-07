@@ -212,12 +212,21 @@ year-end reconciliation.
 (as CSV), and a date window (default 5 days, since posting lags the transaction
 and the sheet records the purchase date).
 
-**Matching.** For each report charge — purchases *and* fee lines — look for a
-sheet row whose `Cost` equals the charge amount and whose `date` falls within the
-window of the charge's transaction date. Exactly one match claims that row.
-Where no exact match exists, retry within the window on **vendor token overlap
-alone**, which surfaces a row recorded with the wrong amount instead of
-misreporting it as absent.
+**Matching runs in two phases**, and the ordering is load-bearing.
+
+*Phase 1* — for each report charge, purchases *and* fee lines, look for a sheet
+row whose `Cost` equals the charge amount and whose `date` falls within the
+window of the charge's transaction date. Exactly one match claims that row; more
+than one is ambiguous; none defers the charge to phase 2.
+
+*Phase 2* — for deferred charges only, and only over rows still unclaimed, retry
+within the window on **vendor token overlap alone**. This surfaces a row recorded
+with the wrong amount instead of misreporting it as absent.
+
+Every exact match must resolve before any fuzzy matching begins. Interleaving the
+two lets a row be offered as a mismatch candidate for one charge and then consumed
+as the confirmed match for another, so a human would be sent to edit the row that
+is in fact correct. One row is claimed by at most one charge.
 
 **Outputs**, each an explicit bucket rather than a single "missing" list:
 
