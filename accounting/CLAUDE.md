@@ -20,6 +20,9 @@ Start asks the user to restart from the right one.
 Structure per year:
 - `{year}/receipts/` — numbered receipt files
 - `{year}/supplements/` — monthly entertainment supplement PDFs
+- `{year}/reports/` — SmartData exports (`YYYY_MM.xlsx` preferred; statement and
+  expense-inbox PDFs also appear). Parse with `scripts/parse_smartdata.py`; see
+  `references/smartdata_reports.md`.
 
 ## Spreadsheet Configuration
 On first run each year, the skill creates/updates `spreadsheet_links.yaml` in the working folder with the Google Sheet URL for that year. This file is NOT in the skill folder (it contains sensitive links).
@@ -30,3 +33,9 @@ On first run each year, the skill creates/updates `spreadsheet_links.yaml` in th
 
 ## Sensitive Data Policy
 The skill folder (this directory) is git-tracked. Never store spreadsheet links, actual expense data, receipt contents, or any personally identifiable information here. All session-specific data stays in the working folder.
+
+SmartData reports in `{year}/reports/` carry the cardholder's name, tax id, card
+number, street address, and account balances. They stay in the working folder.
+Never copy any of it into the spreadsheet, into row notes, or into this
+directory. `scripts/parse_smartdata.py` deliberately excludes those fields from
+its output.

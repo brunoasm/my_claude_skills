@@ -18,6 +18,8 @@ Keywords: receipt, expense, accounting, budget, fund, supplement, p-card, procur
 
 - `references/gl_codes.md` — GL code reference table with entertainment flags
 - `references/supplement_guide.md` — Supplement form layout and filing rules
+- `references/smartdata_reports.md` — SmartData report formats, parsing, the 1% international fee, and pairing rules
+- `scripts/parse_smartdata.py` — parses a SmartData Account Statement XLSX and pairs international fees
 
 ## Session Start
 
@@ -71,17 +73,26 @@ If the current directory holds neither `spreadsheet_links.yaml` nor a `{year}/` 
    - **Non-receipt**: forms, summaries, statements — flag for user, skip processing
    - **Unreadable**: image too low-resolution or corrupted — flag and ask user for details
 
-7. **Report status**:
+7. **Load SmartData reports**: List `{working_folder}/{year}/reports/`. For each `YYYY_MM.xlsx`, run:
+   ```bash
+   python3 scripts/parse_smartdata.py "{working_folder}/{year}/reports/{file}" --json
+   ```
+   Keep the parsed purchases, fee lines, and pairings for use in Phase 1, and note which posting-date windows are covered. If `validation.ok` is false, report the failing checks to the user before processing anything. See `references/smartdata_reports.md` for the formats, the PDF fallbacks, and what each `problems` reason means.
+
+   The folder is optional — if it is missing or empty, continue without it and ask per Step 1.3 when a receipt actually needs the information.
+
+8. **Report status**:
    ```
    Year: {year}
    Spreadsheet: {url}
    Existing expense records: {count}
+   Reports loaded: {count} covering {posting-date windows}
    Numbered receipts: {count} (highest: {number})
    Unnumbered files to process: {count}
    {list unnumbered filenames}
    ```
 
-8. Ask the user what they'd like to do: process new receipts, reconcile, check budgets, or generate a supplement.
+9. Ask the user what they'd like to do: process new receipts, reconcile, check budgets, or generate a supplement.
 
 ## Phase 1: Receipt Processing
 
@@ -103,7 +114,45 @@ Generate the next receipt number continuing from the highest existing number:
 - Short description: lowercase, underscores, 2-4 words describing the purchase
 - Example: `26025_amazon_labsupplies.pdf`
 
-### Step 1.3 — Propose expense record
+### Step 1.3 — Cross-check against the SmartData report
+
+Use the reports loaded during session start (step 7). See
+`references/smartdata_reports.md` for details.
+
+1. **Payment method**: match the receipt to a parsed purchase by description and
+   amount. Descriptions are card descriptors (`AMAZON MKTPL*<id>`,
+   `SQ *<merchant>`), so match fuzzily. A match confirms `p-card`. If there is no
+   match, ask whether this is a p-card charge that has not posted yet, `finance`,
+   or `reimbursement` — never silently default to `p-card`.
+
+2. **Amount**: compare the receipt total to the posted USD amount. If they
+   differ, show both and ask which to record. Differences are usually legitimate
+   — tips, currency conversion, partial capture, hotel incidentals — so the
+   posted amount normally wins, but do not assume it.
+
+3. **International fee**: the charge is international when the report's Country
+   is present and not `UNITED STATES`. If no report covers the receipt's period,
+   fall back to the heuristic (non-USD receipt, or a vendor outside the US even
+   if billed in USD).
+   - If a paired fee line exists, use its **actual** amount.
+   - If the charge is international but has not posted, compute **1% of the
+     posted USD amount, rounded half-up** and mark it an estimate.
+   - If the parser reported the fee under `problems`, show the candidates and
+     ask. When `equivalent` is true, say that either assignment gives the same
+     numbers.
+
+For an international charge, `Cost` on the main row is the **posted USD amount**,
+not the receipt's foreign total, and `notes` carries the original amount,
+currency, and conversion rate.
+
+**When a report is needed but missing**: if the receipt's period has no report at
+all, ask the user to export that statement month from SmartData into
+`{year}/reports/` as `YYYY_MM.xlsx`. Offer to continue meanwhile with a computed
+1% estimate and a flagged payment method — a missing report must never block the
+work. If a report covers the period but the charge is absent, it simply has not
+posted; do not ask for another report.
+
+### Step 1.4 — Propose expense record
 Fill in all 10 columns of the expenses tab:
 
 | Field | How to determine |
@@ -119,7 +168,31 @@ Fill in all 10 columns of the expenses tab:
 | notes | Leave empty unless something notable |
 | request reimbursement | Leave empty unless user specifies |
 
-### Step 1.4 — Entertainment check
+**International transaction fee row.** When Step 1.3 found or computed a fee, emit a
+**second row** alongside the main one:
+
+| Field | Value |
+|-------|-------|
+| Expense | `{vendor} — international transaction fee` |
+| Vendor | same as the parent row |
+| Cost | the actual fee from the report, else 1% of the parent's USD amount rounded half-up |
+| date | the **parent row's** date, so the two rows stay adjacent |
+| method | `p-card` |
+| Fund | same as the parent row |
+| GL code | same as the parent row |
+| receipt_number | same as the parent row |
+| notes | `Foreign transaction fee on {what} (see {receipt_number})` — append `; 1% estimate, verify against statement` when computed rather than read |
+
+The fee inherits the parent's GL code, so no new GL code is needed. Sharing the
+parent's `receipt_number` is expected: Phase 3 already treats one receipt number
+covering multiple rows as normal. If the fee's own posting date differs from the
+parent's, note it rather than splitting the rows apart.
+
+For `finance` and `reimbursement`, add **no** fee row — the 1% is a card
+assessment. Still record the posted USD amount and put the foreign amount in
+`notes`.
+
+### Step 1.5 — Entertainment check
 If the GL code is an entertainment code (6455, 6460, 6470, 6475), collect supplement form fields. Use patterns learned from past supplements (read during session start, step 4) to propose defaults:
 - **Location**: venue name and city (often derivable from receipt)
 - **Persons Involved**: propose based on patterns from past supplements for similar expense types — e.g., grocery/snack purchases may consistently use a standard lab group description, while restaurant meals list named attendees. Only ask the user to confirm or correct, not to provide from scratch
@@ -128,7 +201,7 @@ If the GL code is an entertainment code (6455, 6460, 6470, 6475), collect supple
 
 Store this supplement data for Phase 4.
 
-### Step 1.5 — Confirm with user
+### Step 1.6 — Confirm with user
 Present all proposed data clearly and ask for confirmation before proceeding. Show:
 - Proposed filename
 - All expense record fields
@@ -138,7 +211,7 @@ Only after user confirms:
 - Rename the file using `mv`
 - Add the expense record to the accumulator for Phase 2
 
-### Step 1.6 — Repeat
+### Step 1.7 — Repeat
 Move to the next unnumbered file. After all files are processed, proceed to Phase 2.
 
 ## Phase 2: Spreadsheet Update
@@ -169,7 +242,10 @@ Compare receipts folder against spreadsheet records:
    - **Orphaned receipts**: files in folder with no matching `receipt_number` in the spreadsheet
    - **Missing files**: spreadsheet records whose `receipt_number` has no matching file
    - **Note**: some receipt numbers may cover multiple expense rows (same receipt, multiple items) — this is expected
-4. **Report** findings clearly, listing any discrepancies.
+4. **Confirm estimated fees**: for rows whose notes carry `1% estimate`, check them
+   against a report that now covers the period. Correct the cost if it differs and
+   drop the estimate caveat once confirmed.
+5. **Report** findings clearly, listing any discrepancies.
 
 ## Phase 4: Entertainment Supplement
 
