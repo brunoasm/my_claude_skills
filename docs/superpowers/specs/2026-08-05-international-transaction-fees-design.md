@@ -149,8 +149,18 @@ The step does three things:
    estimate, mark it, and say the report showed no fee line. The usual cause is the
    fee posting just after the statement close, which Phase 3 then reconciles.
 
-   These four branches are exhaustive over what the parser can report: a paired
-   fee, an unposted charge, a `problems` entry, and `international_without_fee`.
+   These branches must be exhaustive **over purchases** — a paired fee, an
+   unposted charge, an `ambiguous` `problems` entry naming this purchase, and
+   `international_without_fee`. They are not exhaustive over *fee lines*: a
+   `problems` entry with `reason: "no_match"` is an orphan fee that names no
+   purchase at all, so nothing links it to a receipt being processed. Orphan fees
+   need their own branch — report the orphan's date and amount, and check it
+   against estimated rows from the previous statement, since a fee posting just
+   after the close appears on the next statement without its parent. Before
+   falling back to a computed estimate, check whether an orphan fee in the same
+   report plausibly belongs to the charge in hand (same transaction date, amount
+   within a cent of 1% of the posted amount) — the actual figure always beats an
+   estimate.
 
 For an international charge, the main row records the posted USD amount as `Cost`,
 and `notes` carries the original amount, currency, and conversion rate.
@@ -179,7 +189,9 @@ date differs from the parent's, note it rather than splitting the rows apart.
 ### Non-p-card methods
 
 For `finance` and `reimbursement`, add **no fee row** — the 1% is a card
-assessment. Still record the USD amount and put the foreign amount in `notes`.
+assessment. Record the USD amount if it is known — from the payer's own statement
+or the reimbursement figure — and otherwise ask, since no report the skill can
+read covers a non-p-card payment. Put the foreign amount in `notes` either way.
 
 ### Phase 3 — reconciliation
 
