@@ -113,7 +113,17 @@ def _within(left, right, days):
 
 
 def check(report, expenses, window_days=DEFAULT_WINDOW_DAYS):
-    """Compare posted charges against recorded rows."""
+    """Compare posted charges against recorded rows.
+
+    Two-phase matching:
+    - Phase 1: Exact matches only. A row is claimed (removed from unclaimed) only
+      when exactly one row matches both amount and date. Multiple exact matches
+      go to ambiguous bucket; no exact matches proceed to phase 2.
+    - Phase 2: Vendor-overlap matching for charges with no exact match. Rows
+      already claimed in phase 1 are unavailable, preventing a row from being
+      reported as a mismatch candidate for one charge and then claimed as the
+      exact match for another.
+    """
     charges = [{
         "description": txn["description"],
         "transaction_date": txn["transaction_date"],
@@ -124,8 +134,10 @@ def check(report, expenses, window_days=DEFAULT_WINDOW_DAYS):
     } for txn in report["purchases"] + report["fees"]]
 
     unclaimed = list(expenses)
-    matched, mismatches, ambiguous, missing, no_receipt = [], [], [], [], []
+    matched, mismatches, ambiguous, no_receipt = [], [], [], []
+    unmatched_exact = []  # charges with no exact match, for phase 2
 
+    # Phase 1: Exact matching
     for charge in charges:
         when = parse_report_date(charge["transaction_date"])
 
@@ -137,20 +149,24 @@ def check(report, expenses, window_days=DEFAULT_WINDOW_DAYS):
             matched.append({"charge": charge, "row": row})
             if not row["receipt_number"]:
                 no_receipt.append({"charge": charge, "row": row})
-            continue
-        if len(exact) > 1:
+        elif len(exact) > 1:
             ambiguous.append({"charge": charge, "candidates": exact})
-            continue
+        else:
+            # No exact match; defer to phase 2 for vendor-overlap matching
+            unmatched_exact.append(charge)
 
+    # Phase 2: Vendor-overlap matching for charges with no exact match
+    missing = []
+    for charge in unmatched_exact:
+        when = parse_report_date(charge["transaction_date"])
         descriptor = tokens(charge["description"])
         near = [r for r in unclaimed
                 if _within(r["date"], when, window_days)
                 and (tokens(r["vendor"]) & descriptor or tokens(r["expense"]) & descriptor)]
         if near:
             mismatches.append({"charge": charge, "candidates": near})
-            continue
-
-        missing.append(charge)
+        else:
+            missing.append(charge)
 
     return {
         "period": report["period"],

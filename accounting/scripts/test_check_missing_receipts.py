@@ -21,6 +21,7 @@ from check_missing_receipts import (  # noqa: E402
     check,
     load_expenses,
     parse_money,
+    parse_report_date,
     parse_sheet_date,
     tokens,
 )
@@ -148,6 +149,44 @@ def test_duplicate_sheet_rows_are_ambiguous():
         ])
         assert len(result["ambiguous"]) == 1
         assert len(result["ambiguous"][0]["candidates"]) == 2
+
+
+def test_parse_report_date_handles_report_format():
+    assert parse_report_date("02/02/2026") == date(2026, 2, 2)
+    assert parse_report_date("invalid") is None
+
+
+def test_row_cannot_be_claimed_by_multiple_charges():
+    """A sheet row exactly matching one charge cannot be a mismatch candidate for another."""
+    with tempfile.TemporaryDirectory() as tmp:
+        # Report with two charges from same vendor:
+        # First: 12.00 (no exact match exists)
+        # Second: 12.50 (exact match exists in sheet)
+        # The sheet row should match the second charge, not be offered as candidate for first
+        report_rows = [
+            txn("02/03/2026", "02/02/2026", "EXAMPLE CA VENDOR", "TORONTO, ON",
+                "CANADA", "16.67", "CAD", "1.4000", "12.00"),
+            txn("02/03/2026", "02/02/2026", "EXAMPLE CA VENDOR", "TORONTO, ON",
+                "CANADA", "17.50", "CAD", "1.4000", "12.50"),
+        ]
+        report_summary = [2, "24.50", 0, "0.00", 2, "24.50"]
+
+        report_path = build_workbook(Path(tmp) / "report.xlsx",
+                                     txn_rows=report_rows, summary_row=report_summary)
+        csv_path = write_csv(Path(tmp) / "expenses.csv", [
+            row("Example purchase", "Example CA Vendor", "$12.50", "2-Feb-2026"),
+        ])
+
+        result = check(parse_report(report_path), load_expenses(csv_path))
+
+        # The 12.50 charge should get an exact match
+        assert result["matched"] == 1, f"Expected 1 matched, got {result['matched']}"
+        # The 12.00 charge should be missing, not offered as a mismatch candidate
+        assert len(result["missing_from_sheet"]) == 1, \
+            f"Expected 1 missing, got {len(result['missing_from_sheet'])}"
+        assert result["missing_from_sheet"][0]["amount"] == Decimal("12.00")
+        assert len(result["possible_amount_mismatch"]) == 0, \
+            f"Expected 0 mismatches, got {len(result['possible_amount_mismatch'])}"
 
 
 TESTS = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
