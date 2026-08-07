@@ -136,10 +136,18 @@ Use the reports loaded during session start (step 7). See
    if billed in USD).
    - If a paired fee line exists, use its **actual** amount.
    - If the charge is international but has not posted, compute **1% of the
-     posted USD amount, rounded half-up** and mark it an estimate.
+     posted USD amount, rounded half-up to the cent** and mark it an estimate.
    - If the parser reported the fee under `problems`, show the candidates and
      ask. When `equivalent` is true, say that either assignment gives the same
      numbers.
+   - If the report covers the charge, shows no paired fee, and it is not in
+     `problems` either — i.e. the parser lists it under
+     `international_without_fee` — treat it the same as a fee that has not
+     posted yet: compute **1% of the posted USD amount, rounded half-up to the
+     cent**, add the fee row marked as an estimate, and tell the user the
+     report showed no fee line for that charge. The likely cause is the fee
+     posting just after the statement close; Phase 3's estimated-fee check
+     will confirm or correct it once a later report covers it.
 
 For an international charge, `Cost` on the main row is the **posted USD amount**,
 not the receipt's foreign total, and `notes` carries the original amount,
@@ -175,13 +183,13 @@ Fill in all 10 columns of the expenses tab:
 |-------|-------|
 | Expense | `{vendor} — international transaction fee` |
 | Vendor | same as the parent row |
-| Cost | the actual fee from the report, else 1% of the parent's USD amount rounded half-up |
+| Cost | the actual fee from the report, else 1% of the parent's USD amount rounded half-up to the cent |
 | date | the **parent row's** date, so the two rows stay adjacent |
-| method | `p-card` |
+| method | same as the parent row (always `p-card` — a fee row is only ever emitted when the parent is `p-card`; see below) |
 | Fund | same as the parent row |
 | GL code | same as the parent row |
 | receipt_number | same as the parent row |
-| notes | `Foreign transaction fee on {what} (see {receipt_number})` — append `; 1% estimate, verify against statement` when computed rather than read |
+| notes | `Foreign transaction fee on {parent row's Expense description} (see {receipt_number})` — append `; 1% estimate, verify against statement` when computed rather than read. When the estimate is because the report covered the charge but showed no fee line (`international_without_fee`), also append `; report showed no fee line for this charge` so both facts are on record. |
 
 The fee inherits the parent's GL code, so no new GL code is needed. Sharing the
 parent's `receipt_number` is expected: Phase 3 already treats one receipt number
