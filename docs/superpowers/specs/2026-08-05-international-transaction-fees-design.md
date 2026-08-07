@@ -82,7 +82,11 @@ Transaction Count / Transaction Amount (purchases), Payment Count / Payment Amou
 
 **Self-validation.** After parsing, check that the purchase count and sum match
 Transaction Count/Amount, and the fee count and sum match Payment Count/Amount. On
-mismatch, report it and fall back to asking rather than proceeding on a bad parse.
+mismatch, report the failing checks to the user and then **continue using the
+parse**, treating fee amounts derived from it as unconfirmed until the user says
+otherwise. Stopping would be wrong: a refund or payment in the month lands in the
+statement's Payment bucket alongside the fees, so a perfectly correct parse
+mismatches on the fee side whenever a credit occurs.
 
 ## International detection
 
@@ -211,7 +215,8 @@ gap:
   not posted yet. Do not ask for a new report; compute the 1% estimate and flag it.
 - Receipt total disagrees with the posted amount.
 - Fee pairing is ambiguous or finds no candidate.
-- Self-validation against the summary block fails.
+- Self-validation against the summary block fails — report the failing checks and
+  continue, rather than stopping; see Self-validation above.
 
 ## Missing-charge check
 

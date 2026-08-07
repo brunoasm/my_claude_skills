@@ -262,8 +262,9 @@ covering multiple rows as normal. If the fee's own posting date differs from the
 parent's, note it rather than splitting the rows apart.
 
 For `finance` and `reimbursement`, add **no** fee row — the 1% is a card
-assessment. Still record the posted USD amount and put the foreign amount in
-`notes`.
+assessment. Record the USD amount if it is known, from the payer's own statement
+or the reimbursement figure, and otherwise ask: no report this skill can read
+covers a non-p-card payment. Put the foreign amount in `notes` either way.
 
 ### Step 1.5 — Entertainment check
 If the GL code is an entertainment code (6455, 6460, 6470, 6475), collect supplement form fields. Use patterns learned from past supplements (read during session start, step 4) to propose defaults:
