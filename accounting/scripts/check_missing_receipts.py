@@ -8,7 +8,9 @@ amounts are equal and the sheet date falls within a few days of the charge's
 transaction date (posting lags the transaction, and the sheet records the
 purchase date). Where no exact match exists, a second pass looks for a row in
 the same window whose vendor words overlap the card descriptor -- that surfaces
-a row entered with the wrong amount rather than calling it absent.
+a row entered with the wrong amount rather than calling it absent. Fee lines
+carry no vendor words of their own, so that pass cannot speak to them and they
+go straight to the missing list.
 
 Results are split into explicit buckets so that "not recorded" is never
 conflated with "recorded differently":
@@ -47,6 +49,12 @@ from parse_smartdata import FEE_DESCRIPTION, parse_report  # noqa: E402
 DEFAULT_WINDOW_DAYS = 5
 _SHEET_DATE_FORMATS = ("%d-%b-%Y", "%d-%B-%Y", "%m/%d/%Y", "%Y-%m-%d")
 
+# Words that appear in every fee line and in every fee row, so they identify
+# nothing. Every fee charge is described "INTERNATIONAL TRANSACTION" and every
+# fee row is named "{vendor} - international transaction fee", so leaving them
+# in makes token overlap between any fee and any other fee automatic.
+GENERIC_TOKENS = frozenset({"INTERNATIONAL", "TRANSACTION"})
+
 
 def parse_money(text):
     """Parse a spreadsheet Cost cell into a Decimal, or None if unparseable."""
@@ -83,9 +91,14 @@ def parse_report_date(text):
 
 
 def tokens(name):
-    """Comparable words from a vendor name or card descriptor."""
+    """Discriminating words from a vendor name or card descriptor.
+
+    Words shared by every fee line and every fee row are dropped: they would
+    make any fee overlap any other fee, which is no evidence at all.
+    """
     words = re.split(r"[^A-Za-z0-9]+", str(name or "").upper())
-    return {w for w in words if len(w) >= 4 and not w.isdigit()}
+    return {w for w in words
+            if len(w) >= 4 and not w.isdigit() and w not in GENERIC_TOKENS}
 
 
 def load_expenses(path):
@@ -158,8 +171,16 @@ def check(report, expenses, window_days=DEFAULT_WINDOW_DAYS):
     # Phase 2: Vendor-overlap matching for charges with no exact match
     missing = []
     for charge in unmatched_exact:
-        when = parse_report_date(charge["transaction_date"])
         descriptor = tokens(charge["description"])
+        if not descriptor:
+            # Nothing discriminating survives -- a fee line's whole descriptor is
+            # generic. Overlap would match it against any fee row in the window,
+            # including one that correctly records a different charge (a fee from
+            # the previous statement, say). Report it as unrecorded, which is the
+            # honest answer, rather than pointing the user at a correct row.
+            missing.append(charge)
+            continue
+        when = parse_report_date(charge["transaction_date"])
         near = [r for r in unclaimed
                 if _within(r["date"], when, window_days)
                 and (tokens(r["vendor"]) & descriptor or tokens(r["expense"]) & descriptor)]
@@ -206,7 +227,8 @@ def main():
               f"{charge['description']} [{label}]")
     for item in result["possible_amount_mismatch"]:
         charge = item["charge"]
-        costs = ", ".join(f"${c['cost']}" for c in item["candidates"])
+        costs = ", ".join("unparseable" if c["cost"] is None else f"${c['cost']}"
+                          for c in item["candidates"])
         print(f"  AMOUNT?  {charge['transaction_date']}  posted ${charge['amount']}  "
               f"{charge['description']}  sheet has {costs}")
     for item in result["ambiguous"]:

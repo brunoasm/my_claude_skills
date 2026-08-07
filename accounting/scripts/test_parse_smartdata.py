@@ -197,6 +197,29 @@ def test_output_carries_no_cardholder_pii():
             assert secret not in dumped
 
 
+def test_summary_with_unexpected_header_falls_back_instead_of_raising():
+    """A Summary sheet laid out differently must degrade, not crash the parse.
+
+    Without the fallback, find_header_row's ValueError escapes parse_report and
+    validate()'s summary_present branch is unreachable.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        path = build_workbook(Path(tmp) / "report.xlsx")
+        wb = openpyxl.load_workbook(path)
+        summary = wb["Summary Report"]
+        header = find_header_row(summary, "Account Name")
+        summary.cell(row=header, column=1).value = "Cardholder"
+        wb.save(path)
+
+        result = parse_report(path)
+        # the detail sheet still parses
+        assert len(result["purchases"]) == 3
+        validation = result["validation"]
+        assert validation["ok"] is False
+        assert [c["name"] for c in validation["checks"]] == ["summary_present"]
+        assert validation["checks"][0]["ok"] is False
+
+
 TESTS = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
 
 

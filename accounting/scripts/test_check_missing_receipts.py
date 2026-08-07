@@ -189,6 +189,49 @@ def test_row_cannot_be_claimed_by_multiple_charges():
             f"Expected 0 mismatches, got {len(result['possible_amount_mismatch'])}"
 
 
+def test_generic_fee_words_are_not_tokens():
+    """"INTERNATIONAL" and "TRANSACTION" identify nothing -- every fee has them."""
+    assert tokens("INTERNATIONAL TRANSACTION") == set()
+    assert tokens("Example CA Vendor — international transaction fee") \
+        == {"EXAMPLE", "VENDOR"}
+
+
+def test_unrecorded_fee_is_missing_not_matched_to_an_unrelated_fee_row():
+    """An unrecorded fee must not be absorbed by another charge's fee row.
+
+    Every fee line reads "INTERNATIONAL TRANSACTION" and every fee row is named
+    "{vendor} — international transaction fee", so word overlap between any fee
+    and any fee row is automatic. A statement boundary routinely leaves a
+    correctly recorded fee from the previous cycle inside the date window; the
+    unrecorded fee must still be reported as missing, not offered as an amount
+    mismatch against that correct row.
+    """
+    report_rows = [
+        txn("02/10/2026", "02/09/2026", "EXAMPLE PH VENDOR", "MANILA, --",
+            "PHILIPPINES", "1800.00", "PHP", "60.0200", "29.99"),
+        txn("02/10/2026", "02/09/2026", "INTERNATIONAL TRANSACTION", " ", " ",
+            "0.30", "USD", "1.0000", "0.30"),
+    ]
+    report_summary = [1, "29.99", 1, "0.30", 2, "30.29"]
+    with tempfile.TemporaryDirectory() as tmp:
+        report_path = build_workbook(Path(tmp) / "report.xlsx",
+                                     txn_rows=report_rows,
+                                     summary_row=report_summary)
+        csv_path = write_csv(Path(tmp) / "expenses.csv", [
+            # the purchase is recorded correctly
+            row("Example purchase", "Example PH Vendor", "$29.99", "9-Feb-2026"),
+            # an unrelated fee, correctly recorded, from the previous statement
+            row("Example CA Vendor — international transaction fee",
+                "Example CA Vendor", "$0.13", "7-Feb-2026", receipt="26000"),
+        ])
+        result = check(parse_report(report_path), load_expenses(csv_path))
+
+        assert [m["amount"] for m in result["missing_from_sheet"]] \
+            == [Decimal("0.30")]
+        assert result["missing_from_sheet"][0]["is_fee"] is True
+        assert result["possible_amount_mismatch"] == []
+
+
 TESTS = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
 
 

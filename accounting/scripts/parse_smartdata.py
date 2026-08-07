@@ -213,7 +213,16 @@ def parse_report(path):
     wb = load_workbook(path)
     detail = wb[DETAIL_SHEET]
     transactions = parse_transactions(detail)
-    summary = parse_summary(wb[SUMMARY_SHEET]) if SUMMARY_SHEET in wb.sheetnames else None
+
+    # A Summary sheet that is present but laid out differently must degrade to
+    # the same "could not cross-check" verdict as a missing one -- validate()'s
+    # summary_present branch -- rather than crashing the whole parse.
+    summary = None
+    if SUMMARY_SHEET in wb.sheetnames:
+        try:
+            summary = parse_summary(wb[SUMMARY_SHEET])
+        except ValueError:
+            summary = None
 
     fees = [t for t in transactions if t["description"] == FEE_DESCRIPTION]
     purchases = [t for t in transactions if t["description"] != FEE_DESCRIPTION]
