@@ -1519,8 +1519,9 @@ In `accounting/SKILL.md`, append to the `## Available Resources` list:
 In `accounting/SKILL.md`, add to Phase 3 after the "Confirm estimated fees" step added in Task 4:
 
 ```markdown
-5. **Check for unrecorded charges**: for each report in `{year}/reports/`, save the
-   expenses tab as CSV and run:
+5. **Check for unrecorded charges**: for each `YYYY_MM.xlsx` in `{year}/reports/`
+   (the PDF formats are not parseable by this script), save the expenses tab as
+   CSV and run:
    ```bash
    python3 scripts/check_missing_receipts.py "{year}/reports/{file}" --expenses {csv} --json
    ```
