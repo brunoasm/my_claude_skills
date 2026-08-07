@@ -260,8 +260,8 @@ Compare receipts folder against spreadsheet records:
 4. **Confirm estimated fees**: for rows whose notes carry `1% estimate`, check them
    against a report that now covers the period. Correct the cost if it differs and
    drop the estimate caveat once confirmed.
-5. **Check for unrecorded charges**: for each report in `{year}/reports/`, save the
-   expenses tab as CSV and run:
+5. **Check for unrecorded charges**: for each `YYYY_MM.xlsx` in `{year}/reports/`,
+   save the expenses tab as CSV and run:
    ```bash
    python3 scripts/check_missing_receipts.py "{year}/reports/{file}" --expenses {csv} --json
    ```
@@ -270,10 +270,11 @@ Compare receipts folder against spreadsheet records:
    receipt's foreign total instead of the posted USD); `ambiguous` needs the user to
    pick; `rows_without_receipt_number` cannot have a receipt file.
 
-   State the limits alongside the results: charges not yet processed are expected to
-   appear, another cardholder's spending never appears in this report, and
-   aggregated monthly rows cannot match individual charges. Never create rows or
-   invent receipt numbers from this output — report and ask.
+   State the limits alongside the results: a charge not yet processed is a true
+   positive, and early in a cycle the missing list is expected to be long; another
+   cardholder's spending never appears in this report; and aggregated monthly rows
+   cannot match individual charges. Never create rows or invent receipt numbers
+   from this output — report and ask.
 6. **Report** findings clearly, listing any discrepancies.
 
 ## Phase 4: Entertainment Supplement
