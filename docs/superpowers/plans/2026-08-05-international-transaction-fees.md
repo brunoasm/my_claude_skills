@@ -927,10 +927,20 @@ Use the reports loaded during session start (step 7). See
    if billed in USD).
    - If a paired fee line exists, use its **actual** amount.
    - If the charge is international but has not posted, compute **1% of the
-     posted USD amount, rounded half-up** and mark it an estimate.
+     posted USD amount, rounded half-up to the cent** and mark it an estimate.
    - If the parser reported the fee under `problems`, show the candidates and
      ask. When `equivalent` is true, say that either assignment gives the same
      numbers.
+   - If the report covers the charge but lists no paired fee and no `problems`
+     entry for it — the parser reports it under `international_without_fee` —
+     treat the fee as not yet posted: compute 1% rounded half-up to the cent,
+     mark it an estimate, and say the report showed no fee line. The likely
+     cause is the fee posting just after the statement close, and Phase 3's
+     estimated-fee check will confirm or correct it against a later report.
+
+These four branches must stay mutually exclusive and jointly cover every state
+the parser can report: a paired fee, an unposted charge, a `problems` entry, and
+`international_without_fee`.
 
 For an international charge, `Cost` on the main row is the **posted USD amount**,
 not the receipt's foreign total, and `notes` carries the original amount,

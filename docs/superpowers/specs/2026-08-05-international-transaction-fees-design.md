@@ -143,7 +143,14 @@ The step does three things:
    normally wins but is not assumed.
 3. **International fee.** If a paired fee line exists, use its actual amount. If
    the charge is international but unposted, compute 1% and mark it an estimate. If
-   pairing is ambiguous, show candidates and ask.
+   pairing is ambiguous, show candidates and ask. If the report covers the charge
+   but shows no fee line for it and no ambiguity — the parser's
+   `international_without_fee` — treat the fee as not yet posted: compute the 1%
+   estimate, mark it, and say the report showed no fee line. The usual cause is the
+   fee posting just after the statement close, which Phase 3 then reconciles.
+
+   These four branches are exhaustive over what the parser can report: a paired
+   fee, an unposted charge, a `problems` entry, and `international_without_fee`.
 
 For an international charge, the main row records the posted USD amount as `Cost`,
 and `notes` carries the original amount, currency, and conversion rate.
