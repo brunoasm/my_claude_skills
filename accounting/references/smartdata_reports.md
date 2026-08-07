@@ -38,8 +38,10 @@ The international transaction fee is **1% of the posted USD amount, rounded
 half-up to the cent**. It posts as its own transaction, described
 `INTERNATIONAL TRANSACTION`, with blank location and country.
 
-Read the actual fee from the report whenever one covers the charge. Only compute
-1% when the charge has not posted yet, and mark that row as an estimate.
+Read the actual fee from the report whenever one covers the charge. Compute 1%
+instead when the charge has not posted yet, or when the report covers it but
+shows no fee line for it (`international_without_fee`) — either way, mark that
+row as an estimate.
 
 ## International detection
 
@@ -80,3 +82,35 @@ Reports carry the cardholder's name, tax id, **card number**, street address,
 and account balances. They stay in the working folder. Never copy any of it into
 the spreadsheet, into row notes, or anywhere in the skill repo. The parser is
 written to exclude those fields from its output; keep it that way.
+
+## Missing-charge check
+
+    python3 scripts/check_missing_receipts.py {year}/reports/YYYY_MM.xlsx \
+        --expenses expenses.csv --json
+
+A charge claims a sheet row when the amounts are equal and the sheet date is
+within `--window-days` (default 5) of the charge's transaction date. Posting lags
+the transaction, and the sheet records the purchase date, so some tolerance is
+required. Where no exact match exists, a second pass matches on vendor word
+overlap within the same window, which distinguishes *recorded with the wrong
+amount* from *not recorded at all*.
+
+Buckets:
+
+| Key | Meaning |
+|---|---|
+| `missing_from_sheet` | Posted, not recorded. The actionable list. |
+| `possible_amount_mismatch` | Recorded, but the amount disagrees — often the receipt's foreign total instead of the posted USD. |
+| `ambiguous` | Several sheet rows could be the same charge; ask which. |
+| `rows_without_receipt_number` | Matched, but the row has no receipt number, so no receipt file can exist. |
+
+Always report these limits with the results:
+
+- A charge not yet processed is a true positive. Early in a cycle the missing
+  list is *expected* to be long.
+- Only the cardholder's own charges appear in their report.
+- Aggregated sheet rows (a month of spending as one total) cannot match
+  individual charges and will surface as unmatched.
+
+The check reports gaps only. It never writes rows and never invents receipt
+numbers.
