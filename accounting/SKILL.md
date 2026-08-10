@@ -191,6 +191,10 @@ Use the reports loaded during session start (step 7). See
      purchase is one of its `candidates`** — several purchases could have
      incurred it. Show the candidates and ask which. When `equivalent` is true,
      say that either assignment gives the same numbers. Never guess the parent.
+     If the user rules this receipt's purchase **out** — the fee belongs to a
+     different candidate — the purchase has no fee of its own, and the parser
+     will not have listed it under `international_without_fee`. Fall through to
+     (e) and treat it as a charge whose fee has not posted.
 
    - **(d) A fee is in `problems` with `reason: "no_match"`** — an orphan. Its
      `candidates` list is empty, so nothing links it to a receipt and there is
@@ -203,10 +207,14 @@ Use the reports loaded during session start (step 7). See
 
    - **(e) The report covers the charge, shows no paired fee, and it is not in
      `problems` either** — the parser lists it under `international_without_fee`.
-     **First check (d):** if an unpaired `no_match` fee in the same report shares
-     this charge's transaction date and its amount equals 1% of the posted USD
-     amount to within a cent, that fee *is* this charge's — use its **actual**
-     figure, say the pairing was made by hand, and do not compute an estimate.
+     **First check (d):** if **exactly one** unpaired `no_match` fee in the same
+     report shares this charge's transaction date, has an amount equal to 1% of
+     the posted USD amount to within a cent, and does not already match an
+     estimated row carried over from the previous statement, that fee *is* this
+     charge's — use its **actual** figure, say the pairing was made by hand, and
+     do not compute an estimate. If two or more fees fit, or the fee also fits a
+     previous statement's estimated row, show them and ask rather than choosing:
+     the rule against guessing a parent applies to hand matches too.
      Only when no such fee exists, treat the fee as not yet posted: compute **1%
      of the posted USD amount, rounded half-up to the cent**, add the fee row
      marked as an estimate, and tell the user the report showed no fee line for
@@ -347,9 +355,11 @@ Compare receipts folder against spreadsheet records:
    reported in none of them. `rows_without_receipt_number` is different in kind —
    it is a subset of the *matched* rows, so it never overlaps the other three and
    its count is not additive with them. One more thing to know when reading the
-   output: an unrecorded **fee** always appears in `missing_from_sheet` and never
-   in `possible_amount_mismatch`, because every fee line carries the same
-   descriptor and so has no vendor words to match a row on.
+   output: an unrecorded **fee** never appears in `possible_amount_mismatch`,
+   because every fee line carries the same descriptor and so has no vendor words
+   to match a row on. It normally lands in `missing_from_sheet` — though if its
+   amount and date happen to fit two unclaimed rows it goes to `ambiguous`
+   instead, since exact matching runs before the descriptor test.
 
    State the limits alongside the results: a charge not yet processed is a true
    positive, and early in a cycle the missing list is expected to be long; another
