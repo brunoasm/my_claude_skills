@@ -12,6 +12,7 @@ Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and nat
 | **document-ocr** | Converts scanned PDFs and document images into clean Markdown using docling for layout (figures, tables, reading order) plus a vision-language OCR model. Preserves multi-column order, diacritics, and figures. Supports local vLLM/Ollama and cloud vision APIs (OpenAI, Anthropic). [Docs →](./document_ocr/SKILL.md) |
 | **accounting** | Processes procurement card receipts, tracks expenses in Google Sheets, reconciles records, and generates entertainment supplement tables. Reads SmartData statement exports to record the posted USD amount on international charges, add the 1% cross-border fee as its own row, and flag posted charges that were never recorded. [Docs →](./accounting/SKILL.md) |
 | **lab-ordering** | Places lab supply orders from member requests. Routes by request header to Amazon Business, the Pritzker Lab Google Form, or a direct vendor; stages the cart/form and stops for human review before any purchase. [Docs →](./lab_ordering/SKILL.md) |
+| **secure-raw-data-backup** | Archives irreplaceable raw data to write-once cloud cold storage. Generates and verifies md5 checksums, streams an uncompressed tarball to S3 Deep Archive under Object Lock with no local temp copy, writes an instantly-readable manifest as the completion marker, and proves the pipeline with a restore test before trusting it at scale. [Docs →](./secure_raw_data_backup/SKILL.md) |
 
 ### bioinfo-skills
 
