@@ -225,9 +225,53 @@ aws --profile my-backup-profile s3api delete-object \
 # expect: AccessDenied
 ```
 
-Test the write-once property for real before trusting it: upload a small test
-object, try to delete it, try to overwrite it, and confirm each is refused as
-expected. A lock you never tested is a lock you are assuming.
+Test the write-once property for real before trusting it. A lock you never
+tested is a lock you are assuming.
+
+Upload a small throwaway object first (a few KB under a `_test/` prefix), then
+run this from an admin/root shell. Substitute the real version ID — pasting a
+`<PLACEHOLDER>` into bash fails with `syntax error near unexpected token
+'newline'`, because `<` is read as input redirection.
+
+```bash
+aws s3api list-object-versions --bucket my-raw-data-archive --prefix _test/
+
+# Is retention actually applied?
+aws s3api get-object-retention --bucket my-raw-data-archive \
+  --key _test/probe.bin --version-id 'REAL_VERSION_ID'
+#   => {"Retention": {"Mode": "GOVERNANCE", "RetainUntilDate": "2031-..."}}
+
+# An ordinary version delete MUST be refused, even for root
+aws s3api delete-object --bucket my-raw-data-archive \
+  --key _test/probe.bin --version-id 'REAL_VERSION_ID'
+#   => AccessDenied ... object protected by object lock
+
+# Only a deliberate bypass succeeds
+aws s3api delete-object --bucket my-raw-data-archive \
+  --key _test/probe.bin --version-id 'REAL_VERSION_ID' \
+  --bypass-governance-retention
+#   => {"VersionId": "REAL_VERSION_ID"}   (permanent — no undo)
+```
+
+Those outputs are what a correctly configured bucket produces. Interpretation:
+
+- **Retention empty or `NoSuchObjectLockConfiguration`** → the bucket default
+  was not in place when that object was written. Nothing is locked. Fix before
+  archiving anything real.
+- **The no-bypass delete succeeds** → same conclusion, and more urgent.
+- **The bypass delete fails** → the identity lacks
+  `s3:BypassGovernanceRetention`. Fine for a scoped user; worth knowing before
+  an incident if it is the identity you would rely on to fix a mistake.
+
+Note that bypass is triggered by the `x-amz-bypass-governance-retention: true`
+header, not by permission alone — which is why the no-bypass delete is refused
+even for root, and why the test is meaningful from any privileged identity.
+
+Deleting a specific version removes it outright and leaves **no delete
+marker**. Only a version-less `delete-object` creates a marker.
+
+Deletion does not require a restore, even for `DEEP_ARCHIVE` objects — only
+reading does.
 
 ## 7. Where this fits in 3-2-1
 
