@@ -73,7 +73,29 @@ Ask the user which folders are in scope. Data that is derived, reproducible, or
 already public (reference genomes, downloaded databases, assembled results) is
 usually **not** worth cold-storage money — only raw, irreplaceable data is.
 
-## Step 2 — Generate missing checksums
+## Step 2 — Freeze, then generate missing checksums
+
+**Freeze the folder read-only BEFORE hashing it.** This ordering is the whole
+ballgame, and getting it backwards is the most common way an archive goes
+wrong:
+
+```bash
+chmod -R a-w "$dir"     # then hash; unfreeze only to write the checksum file
+```
+
+Checksums taken while a folder is still being worked in go stale silently.
+Worse, `md5sum --check` only validates the files it lists — files *added* after
+hashing pass unnoticed, so a stale checksum file is quietly incomplete as well
+as wrong. A real instance: a folder was hashed mid-analysis, and by upload time
+a tooling settings file had changed and a derived FASTQ had been regenerated at
+double its size, while three new files had appeared and one had been deleted.
+The upload guard caught the changed file; nothing would have caught the added
+ones.
+
+If the folder is still active, say so and offer the choice explicitly: wait
+until the work concludes, archive only the immutable raw inputs, or take a
+deliberate mid-work snapshot. Do not quietly archive a moving target.
+
 
 `scripts/generate_checksums.sh <folder> [<folder> ...]`
 
