@@ -14,8 +14,14 @@ number cited exists in the list and every entry is cited.
 
 Matching is heuristic. Treat the output as a list to check by hand, not a verdict.
 
+The reference list is found, in order of preference: in a separate file given
+with --refs (funders such as NSF require References Cited as its own upload);
+after a heading matching --heading; at a reference-manager bibliography field
+(Zotero, EndNote, Mendeley); or as the trailing run of numbered entries.
+
 Usage:
-  cite_check.py FILE.docx [--heading "References|Works Cited|Literature Cited|Bibliography"]
+  cite_check.py FILE.docx [--refs REFERENCES.docx]
+                          [--heading "References|Works Cited|Literature Cited|Bibliography"]
                           [--bib library.bib]
 """
 import argparse
@@ -23,6 +29,7 @@ import re
 import sys
 import unicodedata
 import zipfile
+import xml.etree.ElementTree as ET
 
 PARTICLE = r"(?:(?:de|da|das|do|dos|del|della|der|den|di|du|la|le|van|von|ten|ter|st\.?)\s+)*"
 NAME = r"[A-ZÀ-Þ][\w'’\-]+"
@@ -44,23 +51,52 @@ def norm(s):
     return "".join(c for c in s if not unicodedata.combining(c)).lower().replace("’", "'").strip()
 
 
-def docx_paragraphs(path):
+BIBL_FIELD = re.compile(r"ADDIN (ZOTERO_BIBL|EN\.REFLIST|Mendeley Bibliography|CSL_BIBLIOGRAPHY)")
+NUMBERED = re.compile(r"\s*(\[\d+\]|\d+\.)\s")
+
+
+def docx_paragraphs(path, marks=None):
+    """Paragraph texts in document order, including tables and text boxes."""
+    W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     xml = zipfile.ZipFile(path).read("word/document.xml").decode("utf8")
-    xml = re.sub(r"<w:del\b[^>]*>.*?</w:del>", "", xml, flags=re.S)
+    xml = re.sub(r"<w:(?:del|moveFrom)\b[^>]*/>", "", xml)
+    xml = re.sub(r"<w:(del|moveFrom)\b[^>]*>.*?</w:\1>", "", xml, flags=re.S)
+    xml = re.sub(r"<mc:Fallback>.*?</mc:Fallback>", "", xml, flags=re.S)
+    root = ET.fromstring(xml)
     paras = []
-    for p in re.findall(r"<w:p\b.*?</w:p>", xml, flags=re.S):
-        t = "".join(re.findall(r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", p, flags=re.S))
-        t = t.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&apos;", "'")
-        paras.append(t)
+
+    def own(el, tag):
+        stack = list(el)[::-1]
+        while stack:
+            n = stack.pop()
+            if n.tag == tag:
+                yield n
+            if n.tag != W + "txbxContent":
+                stack.extend(list(n)[::-1])
+
+    for p in root.iter(W + "p"):
+        instr = "".join(t.text or "" for t in own(p, W + "instrText"))
+        instr += " ".join(f.get(W + "instr", "") for f in own(p, W + "fldSimple"))
+        if marks is not None and BIBL_FIELD.search(instr):
+            marks.append(len(paras))
+        paras.append("".join(t.text or "" for t in own(p, W + "t")))
     return paras
 
 
-def split_body_refs(paras, heading):
+def split_body_refs(paras, heading, marks=()):
     h = re.compile(r"^\s*(%s)\s*:?\s*$" % heading, re.I)
     for i, p in enumerate(paras):
         if h.match(p):
-            return paras[:i], [r for r in paras[i + 1:] if r.strip()]
-    sys.exit("Reference heading not found (try --heading).")
+            return paras[:i], [r for r in paras[i + 1:] if r.strip()], "after heading"
+    if marks:
+        i = marks[0]
+        return paras[:i], [r for r in paras[i:] if r.strip()], "at reference-manager bibliography field"
+    j = len(paras)
+    while j > 0 and (NUMBERED.match(paras[j - 1]) or not paras[j - 1].strip()):
+        j -= 1
+    if sum(1 for r in paras[j:] if r.strip()) >= 3:
+        return paras[:j], [r for r in paras[j:] if r.strip()], "trailing numbered list"
+    sys.exit("Reference list not found: pass --refs FILE, or --heading.")
 
 
 def ref_key(entry):
@@ -68,7 +104,8 @@ def ref_key(entry):
     y = re.search(YEAR, entry)
     if not m:
         return None, y.group(0) if y else None
-    return norm(m.group(1)), (y.group(0) if y else None)
+    sur = re.sub(r"\s+[A-Z]{1,3}$", "", m.group(1).strip())  # "Smith AB" (Vancouver/NSF style) -> "Smith"
+    return norm(sur), (y.group(0) if y else None)
 
 
 def bib_keys(path):
@@ -90,10 +127,23 @@ def main():
     ap.add_argument("file")
     ap.add_argument("--heading", default=r"References( Cited)?|Works Cited|Literature Cited|Bibliography")
     ap.add_argument("--bib", default=None)
+    ap.add_argument("--refs", default=None, help="separate reference-list file (.docx, .txt, .md)")
     a = ap.parse_args()
 
-    paras = docx_paragraphs(a.file) if a.file.lower().endswith(".docx") else open(a.file, encoding="utf8").read().split("\n")
-    body, refs = split_body_refs(paras, a.heading)
+    def load(path, marks=None):
+        if path.lower().endswith(".docx"):
+            return docx_paragraphs(path, marks)
+        return open(path, encoding="utf8").read().split("\n")
+
+    marks = []
+    paras = load(a.file, marks)
+    if a.refs:
+        rparas = load(a.refs)
+        hh = re.compile(r"^\s*(%s)\s*:?\s*$" % a.heading, re.I)
+        body, refs, where = paras, [r for r in rparas if r.strip() and not hh.match(r)], "separate file %s" % a.refs
+    else:
+        body, refs, where = split_body_refs(paras, a.heading, marks)
+    print("Reference list: %d entries (%s)" % (len(refs), where))
     body_text = "\n".join(body)
 
     numbered = sum(bool(re.match(r"\s*(\[\d+\]|\d+\.)\s", r)) for r in refs) > len(refs) / 2

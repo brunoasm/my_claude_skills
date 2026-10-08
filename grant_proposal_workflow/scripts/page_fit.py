@@ -15,6 +15,16 @@ Usage:
   page_fit.py FILE.docx [--stop "References|Works Cited|Literature Cited|Bibliography"]
                         [--limit 15] [--keep-pdf OUT.pdf]
 
+If no stop heading is found, the body is taken to end before a trailing
+numbered reference list ("1. Author ...", "2. ..."), as produced by a
+reference-manager bibliography with no heading.
+
+For .docx input the script also compares the fonts the document asks for with
+the fonts actually embedded in the rendered PDF (poppler's pdffonts). When a font
+is missing here, LibreOffice substitutes a look-alike with different metrics, so
+the page count and line breaks are approximate and the PDF must not be uploaded:
+export the upload PDF on a machine that has the fonts.
+
 Word and LibreOffice paginate slightly differently; confirm close calls in Word.
 """
 import argparse
@@ -50,6 +60,100 @@ def accept_changes(src, dst):
                 s = UNWRAP_RE.sub("", s)
                 data = s.encode("utf8")
             zo.writestr(item, data)
+
+
+NUM_RE = re.compile(r"^\s*\[?(\d{1,3})[.\]]\s+\S")
+MAX_WRAP = 8  # lines a single reference entry may wrap over
+METRIC_COMPATIBLE = {"calibri": "Carlito", "cambria": "Caladea", "arial": "Liberation Sans",
+                     "helvetica": "Liberation Sans", "times new roman": "Liberation Serif",
+                     "courier new": "Liberation Mono"}
+
+
+def trailing_numbered_list(flat):
+    """
+    Index in flat of the "1." line that starts a numbered list running
+    consecutively (1, 2, 3, ...) to the end of the document, or None.
+    A numbered list elsewhere (aims, steps) is not a reference list.
+    """
+    nums = []
+    for k, (_, _, l) in enumerate(flat):
+        m = NUM_RE.match(l[2])
+        if m:
+            nums.append((k, int(m.group(1))))
+    for s, (k, n) in enumerate(nums):
+        if n != 1:
+            continue
+        expected, last = 2, k
+        for k2, n2 in nums[s + 1:]:
+            if k2 - last > MAX_WRAP:
+                break
+            if n2 == expected:
+                expected, last = expected + 1, k2
+        if expected > 2 and len(flat) - 1 - last <= MAX_WRAP:
+            return k
+    return None
+
+
+def norm_font(name):
+    return re.sub(r"[^a-z]", "", name.split("+")[-1].split("-")[0].lower())
+
+
+def used_fonts(docx):
+    """Fonts the document actually uses: direct run fonts, styles in use, defaults, theme."""
+    with zipfile.ZipFile(docx) as zf:
+        names = zf.namelist()
+        read = lambda n: zf.read(n).decode("utf8", "replace") if n in names else ""
+        parts = "".join(read(n) for n in names if re.match(r"word/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$", n))
+        styles, theme = read("word/styles.xml"), read("word/theme/theme1.xml")
+    themes = {}
+    for kind in ("major", "minor"):
+        m = re.search(r"<a:%sFont>.*?<a:latin typeface=\"([^\"]*)\"" % kind, theme, re.S)
+        if m and m.group(1):
+            themes[kind] = m.group(1)
+
+    def font_in(xml):
+        m = re.search(r"<w:rFonts\b[^>]*>", xml or "")
+        if not m:
+            return None
+        a = re.search(r'\bw:ascii="([^"]+)"', m.group(0))
+        if a:
+            return a.group(1)
+        t = re.search(r'\bw:asciiTheme="([^"]+)"', m.group(0))
+        return themes.get(t.group(1)[:5]) if t else None
+
+    by_id = dict(re.findall(r'<w:style\b[^>]*w:styleId="([^"]+)"[^>]*>(.*?)</w:style>', styles, re.S))
+
+    def style_font(sid):
+        seen = set()
+        while sid and sid not in seen and sid in by_id:
+            seen.add(sid)
+            f = font_in(re.search(r"<w:rPr>.*?</w:rPr>", by_id[sid], re.S).group(0)) if "<w:rPr>" in by_id[sid] else None
+            if f:
+                return f
+            b = re.search(r'<w:basedOn w:val="([^"]+)"', by_id[sid])
+            sid = b.group(1) if b else None
+        return None
+
+    m = re.search(r"<w:docDefaults>.*?</w:docDefaults>", styles, re.S)
+    default_font = font_in(m.group(0) if m else "")
+    d = re.search(r'<w:style\b[^>]*w:type="paragraph"[^>]*w:default="1"[^>]*w:styleId="([^"]+)"', styles)
+    default_para = d.group(1) if d else None
+
+    # Word's order for a run: direct formatting, character style, paragraph style chain, defaults.
+    used = set()
+    for p in re.findall(r"<w:p\b.*?</w:p>", parts, re.S):
+        ps = re.search(r'<w:pStyle w:val="([^"]+)"', p)
+        pfont = style_font(ps.group(1) if ps else default_para)
+        for r in re.findall(r"<w:r\b(?:(?!</w:r>).)*?</w:r>", p, re.S):
+            if not re.search(r"<w:t(?:\s[^>]*)?>[^<]*\S", r):
+                continue
+            rpr = re.search(r"<w:rPr>.*?</w:rPr>", r, re.S)
+            rs = re.search(r'<w:rStyle w:val="([^"]+)"', r)
+            f = (font_in(rpr.group(0) if rpr else None) or (style_font(rs.group(1)) if rs else None)
+                 or pfont or default_font)
+            if f:
+                used.add(f)
+    return used
 
 
 def to_pdf(docx, workdir):
@@ -113,9 +217,22 @@ def main():
                     break
             if body_end:
                 break
+        flat = [(i, j, l) for i, p in enumerate(pages) for j, l in enumerate(content(p["lines"]))]
+        if not flat:
+            sys.exit("No text found in the rendered document.")
         if body_end is None:
-            last = len(pages) - 1
-            body_end = (last, content(pages[last]["lines"])[-1])
+            start = trailing_numbered_list(flat)
+            if start is not None:
+                i, j, _ = flat[start]
+                if j > 0:
+                    body_end = (i, content(pages[i]["lines"])[j - 1])
+                elif i > 0:
+                    body_end = (i - 1, content(pages[i - 1]["lines"])[-1])
+                if body_end:
+                    print("Stop heading not found; body taken to end before the numbered reference list "
+                          "that closes the document (starts on page %d)." % (i + 1))
+        if body_end is None:
+            body_end = flat[-1][0], flat[-1][2]
             print("Stop heading not found; treating the whole document as body.")
 
         heights = [l[1] - l[0] for p in pages for l in content(p["lines"]) if 4 < l[1] - l[0] < 30]
@@ -125,6 +242,24 @@ def main():
         page_no, line = body_end
         slack = bottom - line[1]
 
+        if not a.file.lower().endswith(".pdf") and shutil.which("pdffonts"):
+            got = subprocess.run(["pdffonts", pdf], capture_output=True, text=True).stdout
+            have = {norm_font(l.split()[0]) for l in got.splitlines()[2:] if l.split()}
+            close, other = [], []
+            for f in sorted(used_fonts(a.file)):
+                if any(norm_font(f) in h for h in have):
+                    continue
+                sub = METRIC_COMPATIBLE.get(f.lower())
+                if sub and any(norm_font(sub) in h for h in have):
+                    close.append("%s (rendered as %s, same metrics)" % (f, sub))
+                else:
+                    other.append(f)
+            if close:
+                print("NOTE: substituted with metric-compatible fonts: %s" % "; ".join(close))
+                print("      Line breaks should match closely; confirm a tight fit in Word.")
+            if other:
+                print("WARNING: fonts not available for rendering, substituted: %s" % ", ".join(other))
+                print("         Page fit is approximate; export the upload PDF where these fonts are installed.")
         print("File: %s" % a.file)
         print("Pages in rendered file: %d" % len(pages))
         print("Body ends on page %d at y = %.0f pt (page height %.0f pt)" % (page_no + 1, line[1], pages[page_no]["h"]))

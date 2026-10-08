@@ -21,7 +21,18 @@ Typical structures and review criteria for common funder types. **These are orie
 - Letters of collaboration (format and content are restricted; endorsements are generally not allowed)
 - Collaborators and Other Affiliations information
 
-**Watch for:** font and margin rules; what counts toward page limits; whether URLs are allowed in the Project Description; prohibited content in letters; program-specific supplementary documents; submission through Research.gov or Grants.gov.
+**Watch for:** font and margin rules, including which elements may use smaller type (captions, tables, formulas; the exception and its wording vary between guide versions); what counts toward page limits (e.g., results from prior support); whether References Cited is a separate upload; whether URLs are allowed in the Project Description; prohibited content in letters; program-specific supplementary documents; submission through Research.gov or Grants.gov.
+
+## Easy to miss with any funder
+
+These patterns recur from cycle to cycle even though the specifics change. Look for each one in the current documents rather than assuming last cycle's answer.
+
+- **Mid-cycle changes.** Policy notices, supplements, and FAQ updates can change requirements after the solicitation is released. Check for notices attached to the guide in effect, not only the guide itself.
+- **Documents that move into the submission system.** A plan that used to be an uploaded PDF may become a structured web form, or the reverse. When it is a form, draft the answers offline, organized by the form's own fields.
+- **Certifications instead of uploads.** Some requirements are met by a checkbox and an institutional certification (e.g., plans for safe working environments in off-site or field research) rather than a document. The sponsored-programs office usually certifies; confirm who does and that it is done.
+- **Disclosure rules.** Research-security and conflict-of-commitment rules for foreign appointments, support, collaborators, and contractors change often and touch the biosketch, other-support documents, and the budget justification.
+- **Program-specific documents and criteria.** Programs layered on a general guide often add a required letter, an extra review criterion, a different budget minimum or duration, or eligibility limits. Missing one can mean return without review, so extract them into the requirements file at setup.
+
 
 ## U.S. National Institutes of Health (NIH)
 
@@ -65,6 +76,4 @@ DOE, USDA-NIFA, NASA, DoD (including DARPA), NOAA, NEH, and non-U.S. funders (ER
 
 ## Resubmissions
 
-- Get the previous reviews or summary statement and build a response table: critique, response, change made, location.
-- Follow the funder's rules on resubmission introductions and on marking changes.
-- Do not let the response read as defensive. Credit reviewers where they were right.
+See `resubmission.md`.
