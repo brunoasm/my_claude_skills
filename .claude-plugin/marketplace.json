@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Bruno de Medeiros' curated collection of custom Claude skills for enhanced reasoning, deeper analysis, bioinformatics, and accounting",
-    "version": "1.8.1"
+    "version": "1.9.0"
   },
   "plugins": [
     {
