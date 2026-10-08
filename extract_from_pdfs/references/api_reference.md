@@ -240,6 +240,10 @@ Create `my_api_config.json` based on `assets/api_config_template.json`:
 }
 ```
 
+Use `field_mappings` for fields at the top level of a paper's output and `nested_field_mappings` for fields inside it. A dotted path such as `records.plant_species` visits every item of the `records` list (deeper paths like `records.site.locality` also work), and the result is written beside the field it came from, so each record gains its own `output_field` and step 06 exports it as a column. Keys starting with `_` are treated as comments.
+
+After running, step 05 prints a table of values found, validated, and unmatched per path, and warns about any path that found no values. That warning usually means the path does not match the schema, most often a field inside `records` listed without the `records.` prefix.
+
 ### Field Mapping Parameters
 
 **Required:**

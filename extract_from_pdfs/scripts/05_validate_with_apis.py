@@ -7,6 +7,7 @@ This script template includes examples for common databases. Customize for your 
 """
 
 import argparse
+import copy
 import json
 import time
 from pathlib import Path
@@ -292,42 +293,81 @@ def validate_field(value: Any, api_name: str, extra_params: Dict = None) -> Opti
         return None
 
 
+def iter_mappings(api_config: Dict):
+    """
+    Yield (path, config) from field_mappings and nested_field_mappings.
+    Keys starting with '_' and non-dict values are comments and are skipped.
+    """
+    for section in ('field_mappings', 'nested_field_mappings'):
+        for path, field_config in api_config.get(section, {}).items():
+            if path.startswith('_') or not isinstance(field_config, dict):
+                continue
+            yield path, field_config
+
+
+def find_parents(obj: Any, keys: List[str]):
+    """
+    Yield every dict reached by following keys from obj, descending into
+    every item of any list on the way ('records.species' visits each record).
+    """
+    if isinstance(obj, list):
+        for item in obj:
+            yield from find_parents(item, keys)
+    elif isinstance(obj, dict):
+        if not keys:
+            yield obj
+        elif keys[0] in obj:
+            yield from find_parents(obj[keys[0]], keys[1:])
+
+
 def process_record(
     record_data: Dict,
     api_config: Dict,
-    skip_validation: bool = False
+    skip_validation: bool = False,
+    stats: Optional[Dict] = None
 ) -> Dict:
     """
-    Process a single record, validating specified fields.
+    Process a single paper's extracted data, validating specified fields.
 
-    api_config should map field names to API names:
+    api_config maps field paths to API names. A dotted path descends into
+    nested objects and lists, and the validated result is written beside the
+    field it came from (so 'records.species' adds output_field to each record):
     {
         "field_mappings": {
-            "species": {"api": "gbif_taxonomy", "output_field": "validated_species"},
-            "location": {"api": "geocode", "output_field": "geocoded_location"}
+            "species": {"api": "gbif_taxonomy", "output_field": "validated_species"}
+        },
+        "nested_field_mappings": {
+            "records.location": {"api": "geocode", "output_field": "coordinates"}
         }
     }
+
+    If stats is given, per-path counts of values found, validated, and
+    unmatched are accumulated into it.
     """
     if skip_validation:
         return record_data
 
-    field_mappings = api_config.get('field_mappings', {})
-
-    for field_name, field_config in field_mappings.items():
+    for path, field_config in iter_mappings(api_config):
+        *parent_keys, field_name = path.split('.')
         api_name = field_config.get('api')
         output_field = field_config.get('output_field', f'validated_{field_name}')
         extra_params = field_config.get('extra_params', {})
+        counts = {'found': 0, 'validated': 0, 'no_match': 0}
+        if stats is not None:
+            counts = stats.setdefault(path, counts)
 
-        # Handle nested fields (e.g., 'records.species')
-        if '.' in field_name:
-            # This is a simplified example - you'd need to implement proper nested access
-            continue
-
-        value = record_data.get(field_name)
-        if value:
+        for parent in find_parents(record_data, parent_keys):
+            value = parent.get(field_name)
+            if not value or value == 'none':
+                continue
+            counts['found'] += 1
             validated = validate_field(value, api_name, extra_params)
             if validated:
-                record_data[output_field] = validated
+                parent[output_field] = validated
+                counts['validated'] += 1
+            else:
+                counts['no_match'] += 1
+            time.sleep(0.5)
 
     return record_data
 
@@ -343,6 +383,7 @@ def main():
     # Process each result
     validated_results = {}
     stats = {'total': 0, 'validated': 0, 'failed': 0}
+    field_stats = {}
 
     for record_id, result in results.items():
         if result.get('status') != 'success':
@@ -355,21 +396,18 @@ def main():
         # Get extracted data
         extracted_data = result.get('extracted_data', {})
 
-        # Process/validate the data
+        # Deep copy so nested records in extracted_data are left as extracted
         validated_data = process_record(
-            extracted_data.copy(),
+            copy.deepcopy(extracted_data),
             api_config,
-            args.skip_validation
+            args.skip_validation,
+            field_stats
         )
 
         # Update result
         result['validated_data'] = validated_data
         validated_results[record_id] = result
         stats['validated'] += 1
-
-        # Rate limiting
-        if not args.skip_validation:
-            time.sleep(0.5)
 
     # Save results
     output_path = Path(args.output)
@@ -380,8 +418,19 @@ def main():
     print("Validation and Enrichment Summary")
     print(f"{'='*60}")
     print(f"Total records: {len(results)}")
-    print(f"Successfully validated: {stats['validated']}")
+    print(f"Processed: {stats['validated']}")
     print(f"Failed extractions: {stats['failed']}")
+
+    if not args.skip_validation:
+        print(f"\n{'Field':<40} {'found':>7} {'validated':>10} {'no match':>9}")
+        for path, c in field_stats.items():
+            print(f"{path:<40} {c['found']:>7} {c['validated']:>10} {c['no_match']:>9}")
+        unmatched = [path for path, c in field_stats.items() if c['found'] == 0]
+        if unmatched:
+            print("\nWARNING: no values found for: " + ", ".join(unmatched))
+            print("Check these paths against your extraction schema "
+                  "(fields inside 'records' need a 'records.' prefix).")
+
     print(f"\nResults saved to: {output_path}")
     print(f"\nNext step: Export to analysis format")
 

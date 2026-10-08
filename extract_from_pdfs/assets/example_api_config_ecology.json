@@ -3,25 +3,16 @@
   "_note": "This shows how to validate taxonomic and geographic data",
 
   "field_mappings": {
-    "plant_species": {
-      "api": "wfo_plants",
-      "output_field": "validated_plant_taxonomy",
-      "description": "Validate plant species names against World Flora Online"
-    },
-
-    "country": {
-      "api": "geonames",
-      "output_field": "validated_country",
-      "description": "Validate and standardize country names"
-    }
+    "_comment": "For fields at the top level of each paper's output. This schema keeps every validatable field inside 'records', so all mappings are below."
   },
 
   "nested_field_mappings": {
-    "_comment": "These apply to fields within the 'records' array",
+    "_comment": "These apply to fields within the 'records' array; the result is added to each record",
 
     "records.plant_species": {
       "api": "wfo_plants",
       "output_field": "validated_plant_taxonomy",
+      "description": "Validate plant species names against World Flora Online",
       "extra_params": {}
     },
 
