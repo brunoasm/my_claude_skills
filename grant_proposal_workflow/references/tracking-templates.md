@@ -1,6 +1,6 @@
 # Tracking templates
 
-Short, plain files the project keeps up to date. Store them where future sessions will read them (project notes, a `00_admin/` folder, or both).
+Short, plain files the project keeps up to date. Store them in `00_admin/notes/` (create it if needed) unless the PI already keeps project notes elsewhere, and point to them from the state of play so future sessions find them.
 
 ## State of play (one file, rewritten when things change)
 
@@ -11,6 +11,7 @@ Short, plain files the project keeps up to date. Store them where future session
 **Version of record:** anything already uploaded or entered by someone else (e.g., budget entered by sponsored programs on <date>)
 **Documents:** table of each required document → current file → status → owner (PI / Claude / sponsored programs / collaborator)
 **Lives only in the submission system:** biosketch, current & pending, collaborators list, data-plan web form, cover-sheet certifications → status
+**Bibliography:** reference manager (<which>, latest export <date>) or local library in `98_bibliography/`; inbox last processed <date>
 **Sub-workflow notes:** letters → <path>; budget → <path>
 **Blocking, not writing:** registrations, letters, approvals, recordings
 **Open decisions:** …

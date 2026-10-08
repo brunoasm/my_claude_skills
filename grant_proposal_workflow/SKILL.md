@@ -36,9 +36,10 @@ Reference files (read when the step comes up):
 | `references/resubmission.md` | Turning prior reviews into a revision plan; scope cuts and their leftovers; year shifts |
 | `references/tracking-templates.md` | State of play, session notes, decisions log, numbers registry, people roster, promise traceability matrix, scope-change log, letters tracker, sponsored-programs handoff memo |
 | `references/review-panel.md` | Prompts and procedure for mock panel, red-team, audit, and prior-review compliance agents |
+| `references/bibliography.md` | Reference-manager or local-library mode; finding and fetching papers; processing loose files in the inbox |
 | `references/final-checklist.md` | Per-file checks before upload |
 
-Scripts (Python 3 standard library plus LibreOffice and poppler's `pdftotext`/`pdffonts`):
+Scripts (Python 3 standard library plus LibreOffice and poppler's `pdftotext`/`pdfinfo`/`pdffonts`):
 
 | Script | What it does |
 |---|---|
@@ -47,6 +48,7 @@ Scripts (Python 3 standard library plus LibreOffice and poppler's `pdftotext`/`p
 | `scripts/cite_check.py` | Cross-checks in-text citations against the reference list, which can be a separate file (`--refs`), a heading, or a reference-manager bibliography field. Numbered (`[12, 14–16]`) and author–year styles; optional BibTeX check |
 | `scripts/budget_check.py` | Checks Total rows and columns in the justification's tables, lists table totals the prose never states, and lists dollar amounts that do not appear among the budget workbook's stored values (catches stale summary tables and formulas with no stored value) |
 | `scripts/figure_audit.py` | Caption numbering gaps and duplicates, citations to missing figures or tables, first-mention order, printed size and format of every image, EMF/WMF figures whose text cannot be checked, floating images and captions in text boxes, images anchored in headings, detached table captions |
+| `scripts/pdf_identify.py` | Inventories loose PDFs before filing: DOI, arXiv ID, or PMID; title and year guesses; page count and text layer (scans); supplementary material; duplicates by checksum and DOI, within the folder and against the library. Report only |
 
 ---
 
@@ -55,8 +57,9 @@ Scripts (Python 3 standard library plus LibreOffice and poppler's `pdftotext`/`p
 1. Read the project's state-of-play note, requirements file, decisions log, and latest session notes before changing anything. If they do not exist yet, go to section 1. The state of play names the **canonical working copy** of each document (one location only); work there and nowhere else.
 2. Check the clock: the funder deadline (with time zone), any internal institutional deadline (sponsored-programs offices often require files days earlier), and letter-writer lead times.
 3. Before editing any file, reload it from disk and check for a newer-dated or newer-versioned copy and for an open-in-Word lock file (`~$…`). The PI may have edited it since the last session.
-4. When a sub-area builds up its own conventions (letters, budget, facilities), keep them in a short notes file in that folder and point to it from the state of play, instead of growing one long memory file.
-5. End the session with a short notes file: what was produced, what was decided, what is still open, who owns each open item. Anything the PI decided is not re-proposed later.
+4. If anything new is in the inbox (`00_inbox/`), process it before other work (`references/bibliography.md`, section 4).
+5. When a sub-area builds up its own conventions (letters, budget, facilities), keep them in a short notes file in that folder and point to it from the state of play, instead of growing one long memory file.
+6. End the session with a short notes file: what was produced, what was decided, what is still open, who owns each open item. Anything the PI decided is not re-proposed later.
 
 Files in cloud-synced folders can be offline placeholders that fail to open from a shell ("Resource deadlock avoided" on macOS iCloud, zero-byte reads). Fetch them through the sync client or ask the PI to download them; do not conclude the file is empty.
 
@@ -73,14 +76,17 @@ Every program is handled this way, including those with their own rules (career 
 ```
 <grant>/
 ├── 00_admin/              registration, institutional info, working notes
+├── 00_inbox/              loose files the PI drops in; Claude sorts and logs them
 ├── 01_guidelines/         saved call, form preview, budget template, policy guide
 ├── 02_current/            ONLY the latest version of each document
 │   └── drafts/            every earlier version
-├── 03_supporting/         literature, preliminary data and the code that produced it,
-│                          figures + their source scripts, prior cycle's submission and
-│                          reviews, example funded proposals, correspondence, quotes
+├── 03_supporting/         letters/ (as received and final), preliminary data and the
+│                          code that produced it, figures + their source scripts, prior
+│                          cycle's submission and reviews, example funded proposals,
+│                          correspondence, quotes
 ├── 04_final_submission/   exactly what is uploaded, in upload order
-├── 98_bibliography/       reference-manager export + PDFs
+├── 98_bibliography/       reference-manager exports, or Claude's local library
+│                          (indexed PDFs, library.csv, library.bib, text extracts)
 └── 99_archive/
 ```
 
@@ -101,7 +107,7 @@ Name files `NN_<document>_vX[_tracked].ext` (or `<document>_YYYYMMDD.ext` if tha
 
 ## 2. Gather, then decide
 
-- Collect literature into one reference-manager library and keep a short literature tracker (claim → source → page).
+- **Bibliography mode.** Ask once whether the PI uses a reference manager. If so, work from its exports and leave the library to the PI. If not, Claude builds a local library in `98_bibliography/`: it looks up each work's authoritative record, fetches legal open-access copies, and gets paywalled papers through the PI's own signed-in browser with the PI's help. Procedures are in `references/bibliography.md`. Either way, keep a short literature tracker (claim → source → page).
 - List the **design decisions that drive the numbers** (sample sizes, sites, countries, schedule, staffing and which years each person is paid, optional components). Get the PI's decision on each before drafting methods or the budget; log them.
 - Make a **criteria map**: each review criterion and program goal → where the proposal answers it.
 - Start the **people roster** and the **promise traceability matrix** (templates in `references/tracking-templates.md`). Both are cheap to keep and catch the most common cross-document errors.
@@ -141,7 +147,7 @@ Unless the author asks for a rewrite or a different tone, every edit keeps the o
 - **Never overwrite.** Write the next version as a new file, then move the previous version to `drafts/` without overwriting anything there (`mv -n`). Do not move or edit a file that is open in Word (check for `~$` lock files); say so and leave it.
 - **Start from the author's latest file**, not Claude's last output, whenever the author has edited in between. For spreadsheets and trackers the PI edits by hand, change only the specific cells (load the existing workbook and write those cells); never rebuild the sheet.
 - **Word documents:** make edits as tracked changes, with a comment on any edit that is not self-explanatory. Ask the PI once which author name to use ("Claude" by default; some PIs want their own name or a label such as "Budget reconciliation") and record it in the decisions log. When porting another person's edits from a separate copy, attribute them as "<Name> (via Claude)". If a docx skill with a redlining workflow is available, use it.
-- **Citations in managed documents:** when the document uses a reference manager (Zotero, EndNote, Mendeley), never type citations as plain text. Insert a tracked placeholder such as `(CITE: Author Year, topic)` and give the PI the list to insert as live fields. Problems in the reference manager's data (a wrong year, an abstract full of unrelated text) are fixed in the library and then refreshed, not in the document XML, or the next refresh brings them back.
+- **Citations in managed documents:** when the document uses a reference manager (Zotero, EndNote, Mendeley), never type citations as plain text. Insert a tracked placeholder such as `(CITE: Author Year, topic)` and give the PI the list to insert as live fields. Problems in the reference manager's data (a wrong year, an abstract full of unrelated text) are fixed in the library and then refreshed, not in the document XML, or the next refresh brings them back. Without a reference manager, type citations in the house style as tracked changes, only for works with a verified entry in `library.bib`, and rebuild the reference list from it.
 - **Spreadsheets:** there are no tracked changes, so fill edited cells with a highlight color and give a clean copy without highlights for upload. Formulas written by a script have no cached values until the workbook is opened and saved in Excel or LibreOffice; check that values are stored before submission. Text labels that quote numbers ("tuition $12,000 + fees $2,000") go stale when the numbers change; check them too.
 - **House style:** record the author's style choices (serial comma, preferred terms, capitalization, citation style, name forms for people) in the decisions log and apply them consistently.
 - **Page fit:** after each edit, run `scripts/page_fit.py` and report where the body ends and how much room is left. Fix overflow with content cuts or paragraph spacing, never by going below the funder's font, margin, or spacing rules. If the script reports substituted fonts, or the document has EMF figures or floating images, the count is approximate: ask the author to confirm the final fit in Word.
@@ -168,7 +174,7 @@ Unless the author asks for a rewrite or a different tone, every edit keeps the o
 ## 6. Citation and figure verification
 
 - For any claim a reviewer could challenge (numbers, "first", "only", trends, effect sizes), check it against the **primary source**, not an abstract or memory. Record a verdict for each part of the claim (supported / partly / not in source) with page numbers, and propose a fix with its length cost. Watch "first" claims against the proposal's own tables and prior work.
-- Run `scripts/cite_check.py` to reconcile in-text citations, the reference list, and the reference-manager export. If the funder wants the reference list as a separate document, check against that file with `--refs`. Report what is missing or unused. Give the author corrected entries for their reference manager rather than editing their library.
+- Run `scripts/cite_check.py` to reconcile in-text citations, the reference list, and the bibliography (`--bib` with the reference-manager export or the local `library.bib`). If the funder wants the reference list as a separate document, check against that file with `--refs`. Report what is missing or unused. Give the author corrected entries for their reference manager rather than editing their library.
 - Check that methods are cited where they are first used (the method's original paper, not only a software implementation) and that the prior art for any novelty claim is cited.
 - Check the funder's citation rules (e.g., some require all author names; NSF and NIH have their own reference-list expectations).
 - Do not accept a review agent's correction of a citation without checking the source yourself; agents are wrong often enough to matter.

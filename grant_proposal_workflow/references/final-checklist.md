@@ -19,7 +19,8 @@
 ## Project description / research strategy
 - [ ] Every prompt in the call answered
 - [ ] Reference list uploaded where the funder wants it (separate document if required) and not counted in the page limit
-- [ ] Every citation in the reference list and vice versa (`scripts/cite_check.py --refs`); reference format as required
+- [ ] Every citation in the reference list and vice versa (`scripts/cite_check.py --refs`, `--bib`); reference format as required
+- [ ] Every cited work matches its authoritative record (authors, year, title, pages); claims checked against the paper, not only the abstract
 - [ ] Figure and table numbering continuous, every cross-reference correct (`scripts/figure_audit.py`)
 - [ ] Figures legible at print size, checked at 100% in the PDF (especially any a past reviewer called hard to read); captions match the text
 - [ ] No leftovers from cut scope (timeline rows, figure labels, risks, collaborators)
