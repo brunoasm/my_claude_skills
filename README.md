@@ -1,90 +1,78 @@
-# B. de Medeiros' Claude Skills Collection
+# Claude skills from the de Medeiros lab
 
-Custom Claude skills for enhanced reasoning, bioinformatics, accounting, and natural history museum workflows. Each skill is a self-contained module bundled into installable plugins.
+Skills for Claude that I use for research, writing, and running a lab at the Field Museum. Some apply to any research group, like extracting data from papers, OCR, phylogenomics, data archiving, and grant writing. Others are tied to Field Museum systems and procedures.
 
-## Available Plugins and Skills
+The skills work in Claude Code (installed as plugins from this repo's marketplace) and in Claude.ai (uploaded as zip files from [Releases](https://github.com/brunoasm/my_claude_skills/releases)).
 
-### general-skills
+## Skills
 
-| Skill | Description |
-|-------|-------------|
-| **extract-from-pdfs** | 8-step pipeline for extracting structured data from scientific PDFs using Claude's vision. Supports abstract filtering (Ollama/Haiku/Sonnet), external validation (GBIF, WFO, GeoNames, PubChem, NCBI), and export to multiple formats. [Docs →](./extract_from_pdfs/README.md) |
-| **document-ocr** | Converts scanned PDFs and document images into clean Markdown using docling for layout (figures, tables, reading order) plus a vision-language OCR model. Preserves multi-column order, diacritics, and figures. Supports local vLLM/Ollama and cloud vision APIs (OpenAI, Anthropic). [Docs →](./document_ocr/SKILL.md) |
-| **accounting** | Processes procurement card receipts, tracks expenses in Google Sheets, reconciles records, and generates entertainment supplement tables. Reads SmartData statement exports to record the posted USD amount on international charges, add the 1% cross-border fee as its own row, and flag posted charges that were never recorded. [Docs →](./accounting/SKILL.md) |
-| **lab-ordering** | Places lab supply orders from member requests. Routes by request header to Amazon Business, the Pritzker Lab Google Form, or a direct vendor; stages the cart/form and stops for human review before any purchase. [Docs →](./lab_ordering/SKILL.md) |
-| **secure-raw-data-backup** | Archives irreplaceable raw data to write-once cloud cold storage. Generates and verifies md5 checksums, streams an uncompressed tarball to S3 Deep Archive under Object Lock with no local temp copy, writes an instantly-readable manifest as the completion marker, and proves the pipeline with a restore test before trusting it at scale. [Docs →](./secure_raw_data_backup/SKILL.md) |
-| **grant-proposal-workflow** | Plans, writes, edits, and reviews multi-document grant applications (NSF, NIH, foundations, internal awards): requirements file from the current call, drafting with the author's voice preserved, tracked and reversible edits, budget checks, citation verification, letters, sealed-packet mock panel and red-team reviews, and the final submission package. Scripts audit .docx formatting, report page fit, and cross-check citations. The PI presses submit. [Docs →](./grant_proposal_workflow/SKILL.md) |
+### `general-skills`
 
-### bioinfo-skills
+| Skill | What it does | Needs |
+|---|---|---|
+| [`grant-proposal-workflow`](./grant_proposal_workflow/SKILL.md) | Takes a multi-document grant application (NSF, NIH, foundations, internal awards) from the call to the submission package: requirements file, drafting, edits that keep the author's voice, budget checks, citation verification, letters, and mock panel and red-team reviews. Scripts audit .docx formatting, report page fit, and cross-check citations. | Python 3; LibreOffice and poppler for the page-fit check |
+| [`extract-from-pdfs`](./extract_from_pdfs/SKILL.md) | Turns a collection of scientific PDFs into a validated dataset for systematic reviews and meta-analyses: filters by abstract, extracts data, checks names and places against external databases (GBIF, WFO, GeoNames, PubChem, NCBI), and exports. [Details](./extract_from_pdfs/README.md) | Conda environment; Anthropic API key or a local Ollama model |
+| [`document-ocr`](./document_ocr/SKILL.md) | Converts scanned PDFs and page images to Markdown, keeping multi-column reading order, diacritics, tables, and figures. Uses docling for layout and a vision-language model for the text. | Conda environment; an OCR backend you already run (vLLM, Ollama, or a cloud vision API) |
+| [`secure-raw-data-backup`](./secure_raw_data_backup/SKILL.md) | Archives irreplaceable raw data to write-once S3 Deep Archive: freezes and checksums folders, streams an uncompressed tarball under Object Lock with no local temp copy, writes a manifest you can read without a restore, and proves the setup with a restore test. | AWS account and CLI; `~/.config/secure_raw_data_backup/config.sh` |
+| [`accounting`](./accounting/SKILL.md) | Field Museum p-card accounting: processes receipts into a Google Sheets expense log, assigns GL codes, reconciles against SmartData statements (including the 1% international fee), and builds entertainment supplement tables. | Run from your receipts folder; Google Sheets access |
+| [`lab-ordering`](./lab_ordering/SKILL.md) | Turns lab members' supply requests into staged orders on Amazon Business, the Pritzker Lab form, or a vendor site, and stops for a human to review before anything is bought. | Browser control (Claude in Chrome or similar); `~/.config/lab_ordering/config.yaml` |
 
-| Skill | Description |
-|-------|-------------|
-| **phylo-from-buscos** | Generates phylogenomic workflows from genome assemblies using BUSCO/compleasm single-copy orthologs. Supports NCBI accessions, multiple schedulers (SLURM, PBS, local), concatenated and coalescent phylogenies. [Docs →](./phylo_from_buscos/README.md) |
-| **biogeobears** | Sets up BioGeoBEARS biogeographic analyses in R. Validates inputs, generates RMarkdown scripts, compares DEC/DIVALIKE/BAYAREALIKE models, and produces publication-ready ancestral range visualizations. [Docs →](./biogeobears/README.md) |
+### `bioinfo-skills`
 
-### museum-skills
+| Skill | What it does | Needs |
+|---|---|---|
+| [`busco-phylogeny`](./phylo_from_buscos/SKILL.md) | Builds phylogenomic pipelines from genome assemblies or NCBI accessions using BUSCO/compleasm single-copy orthologs. Generates scripts for SLURM, PBS, or a local machine, for both concatenated and coalescent trees. [Details](./phylo_from_buscos/README.md) | Conda (environment setup included) |
+| [`biogeobears`](./biogeobears/SKILL.md) | Sets up BioGeoBEARS ancestral-range analyses in R: validates and reformats the tree and range files, writes an RMarkdown workflow comparing DEC, DIVALIKE, and BAYAREALIKE, and plots the results. [Details](./biogeobears/README.md) | R with BioGeoBEARS |
 
-| Skill | Description |
-|-------|-------------|
-| **emu-bulk-upload** | Helps FMNH entomology curators bulk upload specimen data to the Emu database. Matches localities to existing records, creates new site records, and generates formatted upload tables. [Docs →](./Emu_bulk_upload_FMNH/SKILL.md) |
-| **nirc-badge-request** | Prepares FMNH NIRC ID badge requests (Scientific Affiliate, Visitor, Contractor) and prefills the NIRC Badge Request Google Form for review. Gates on curator status, validates lead time and after-hours rules, and never submits. [Docs →](./nirc_badge_request/SKILL.md) |
+### `museum-skills` (Field Museum only)
 
-## Installation
+| Skill | What it does | Needs |
+|---|---|---|
+| [`emu-bulk-upload`](./Emu_bulk_upload_FMNH/SKILL.md) | Helps insect collection staff bulk-upload specimen data to EMu: maps any input format to the EMu template, matches localities to existing site records, finds parent sites, and builds the upload tables. [Details](./Emu_bulk_upload_FMNH/README.md) | EMu exports of existing sites |
+| [`nirc-badge-request`](./nirc_badge_request/SKILL.md) | Prepares NIRC ID badge requests (Scientific Affiliate, Visitor, Contractor), checks lead time and after-hours rules, and prefills the Google Form for a curator to review. Curators submit the form; other staff can draft. | Browser control; `~/.config/nirc_badge_request/config.yaml` |
 
-### Claude Code — CLI, VS Code, or JetBrains (Recommended)
+## How these skills behave
 
-These instructions work the same way in:
-- **Claude Code CLI** — type commands directly in the terminal
-- **VS Code** — type commands in the Claude Code chat panel (or use `/plugins` to open the visual manager)
-- **JetBrains IDEs** — type commands in the Claude Code panel
+- **You press submit.** Skills that touch forms, carts, or portals stage everything and stop. Claude doesn't place orders, submit forms, or send requests on its own.
+- **No private details in the repo.** Names, URLs, accounts, and folder locations live in a local config file or your working folder, and the skill asks for them the first time you use it.
+- **Checks before claims.** Where a mistake is costly, a script does the checking (checksums, citation lists, document formatting, page fit, missing receipts) instead of relying on Claude's reading.
 
-#### Step 1: Add the marketplace
+## Install
 
-You only need to do this once:
+### Claude Code
+
+Add the marketplace once, then install the plugins you want:
 
 ```
 /plugin marketplace add brunoasm/my_claude_skills
+/plugin install general-skills@basm-claude-skills
+/plugin install bioinfo-skills@basm-claude-skills
+/plugin install museum-skills@basm-claude-skills
 ```
 
-#### Step 2: Install the plugins you need
+Claude Code will ask whether to install for yourself (user), for everyone working in the current project (project), or only for you in this project (local).
 
-Install all plugins:
-```
-/plugin install general-skills@brunoasm/my_claude_skills
-/plugin install bioinfo-skills@brunoasm/my_claude_skills
-/plugin install museum-skills@brunoasm/my_claude_skills
-```
+To get updates later:
 
-Or install only the ones you want — each plugin is independent.
-
-#### Install from a local clone
-
-```bash
-git clone https://github.com/brunoasm/my_claude_skills.git
-cd my_claude_skills
 ```
-Then in Claude Code:
-```
-/plugin marketplace add .
-/plugin install general-skills@.
+/plugin marketplace update basm-claude-skills
 ```
 
-#### Scope options
+The same commands work from the shell as `claude plugin ...`, e.g. `claude plugin install general-skills@basm-claude-skills --scope user`. To work from a local clone, add the marketplace by path (`/plugin marketplace add ./my_claude_skills`) and install the same way.
 
-When installing, Claude Code will ask you to choose a scope:
-- **User** — available in all your projects
-- **Project** — shared with collaborators via `.claude/settings.json`
-- **Local** — only you, only this repo
+### Claude.ai and the desktop app
 
-### Claude.ai (Web)
+1. Download a skill's zip from the [latest release](https://github.com/brunoasm/my_claude_skills/releases/latest).
+2. In Claude, go to [Customize → Skills](https://claude.ai/customize/skills) and upload the zip.
+3. Turn the skill on.
 
-1. Download the zip file for the desired skill from [releases](https://github.com/brunoasm/my_claude_skills/releases)
-2. Go to Claude.ai **Settings > Capabilities > Skills**
-3. Click **Upload Skill** and select the ZIP file
-4. Enable the skill
+Skills that run scripts need code execution, and skills that drive a browser work best in Claude Code or with Claude in Chrome.
 
-## Resources
+## License
 
-- [Claude Code Plugins Documentation](https://code.claude.com/docs/en/plugins.md)
-- [Claude Code Skills Documentation](https://code.claude.com/docs/en/skills.md)
-- [Claude.ai](https://claude.ai)
+[Apache 2.0](./LICENSE)
+
+## See also
+
+- [Claude Code plugins](https://code.claude.com/docs/en/plugins)
+- [Claude Code skills](https://code.claude.com/docs/en/skills)
