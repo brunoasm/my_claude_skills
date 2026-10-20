@@ -26,6 +26,7 @@ It covers the whole life of an application, not only the writing:
 - **Everything is consistent, verified, and traceable.** Every number agrees across documents, every citation says what the text claims, every named person has the paperwork the funder requires, and every edit is visible and reversible.
 - **The author's voice is kept.** See section 4.
 - **The PI's hand edits are never overwritten.** Reload the live file before every edit and patch it in place; never regenerate a document, tracker, or spreadsheet the PI may have touched from a script or from Claude's last output.
+- **Every state of a shared file is recoverable.** Collaborators edit files in place, so a file named `_v2` can change many times without being renamed. Snapshots keep each state (section 1, "Snapshots").
 
 Reference files (read when the step comes up):
 
@@ -48,6 +49,7 @@ Scripts (Python 3 standard library plus LibreOffice and poppler's `pdftotext`/`p
 | `scripts/cite_check.py` | Cross-checks in-text citations against the reference list, which can be a separate file (`--refs`), a heading, or a reference-manager bibliography field. Numbered (`[12, 14–16]`) and author–year styles; optional BibTeX check |
 | `scripts/budget_check.py` | Checks Total rows and columns in the justification's tables, lists table totals the prose never states, and lists dollar amounts that do not appear among the budget workbook's stored values (catches stale summary tables and formulas with no stored value) |
 | `scripts/figure_audit.py` | Caption numbering gaps and duplicates, citations to missing figures or tables, first-mention order, printed size and format of every image, EMF/WMF figures whose text cannot be checked, floating images and captions in text boxes, images anchored in headings, detached table captions |
+| `scripts/snapshot.py` | Copies every working file in the shared folder whose content changed since the last run into a dated folder outside it, and logs each copy (file, last-modified time, checksum, note). Unchanged files are skipped, so it can run often |
 | `scripts/pdf_identify.py` | Inventories loose PDFs before filing: DOI, arXiv ID, or PMID; title and year guesses; page count and text layer (scans); supplementary material; duplicates by checksum and DOI, within the folder and against the library. Report only |
 
 ---
@@ -56,10 +58,10 @@ Scripts (Python 3 standard library plus LibreOffice and poppler's `pdftotext`/`p
 
 1. Read the project's state-of-play note, requirements file, decisions log, and latest session notes before changing anything. If they do not exist yet, go to section 1. The state of play names the **canonical working copy** of each document (one location only); work there and nowhere else.
 2. Check the clock: the funder deadline (with time zone), any internal institutional deadline (sponsored-programs offices often require files days earlier), and letter-writer lead times.
-3. Before editing any file, reload it from disk and check for a newer-dated or newer-versioned copy and for an open-in-Word lock file (`~$…`). The PI may have edited it since the last session.
+3. Run `scripts/snapshot.py` and read what it copied: those are the files someone changed since the last snapshot. Before editing any of them, compare with the previous snapshot (Word: Review → Compare) so you know what changed and who to credit. Before editing any file, reload it from disk and check for a newer-dated or newer-versioned copy and for an open-in-Word lock file (`~$…`). The PI may have edited it since the last session.
 4. If anything new is in the inbox (`00_inbox/`), process it before other work (`references/bibliography.md`, section 4).
 5. When a sub-area builds up its own conventions (letters, budget, facilities), keep them in a short notes file in that folder and point to it from the state of play, instead of growing one long memory file.
-6. End the session with a short notes file: what was produced, what was decided, what is still open, who owns each open item. Anything the PI decided is not re-proposed later.
+6. End the session with a short notes file: what was produced, what was decided, what is still open, who owns each open item. Anything the PI decided is not re-proposed later. Run `scripts/snapshot.py` again so the session's own output is captured.
 
 Files in cloud-synced folders can be offline placeholders that fail to open from a shell ("Resource deadlock avoided" on macOS iCloud, zero-byte reads). Fetch them through the sync client or ask the PI to download them; do not conclude the file is empty.
 
@@ -91,6 +93,14 @@ Every program is handled this way, including those with their own rules (career 
 ```
 
 Name files `NN_<document>_vX[_tracked].ext` (or `<document>_YYYYMMDD.ext` if that is the PI's habit), where NN is the upload order.
+
+**Snapshots.** When the folder is shared with collaborators through a sync service (Dropbox, OneDrive, Google Drive, Box), assume people will edit files in place rather than save a new version. Set up snapshots on day one:
+
+- Choose a snapshot folder **outside** the shared folder, where only the PI (and Claude) can see it, so nobody edits a snapshot by mistake. If the PI keeps a private area beside the shared folder, put it there.
+- Run `python3 scripts/snapshot.py <shared folder> <snapshot folder> --tz <PI's time zone> --note "<why>"` at the start and end of every session and before editing any shared file. Keep a copy of the script, or a one-line wrapper with the paths filled in, in the project so scheduled runs do not depend on the skill's location.
+- Offer the PI a daily scheduled snapshot (for example each morning) if the session can schedule tasks on the PI's computer. Edits made between snapshots by two people on the same day keep only the latest state; the sync service's own version history is the backup for that.
+- Tell collaborators in the shared folder's README that editing the current file in place is fine and to turn on Track Changes; do not mention where the snapshots are kept.
+- Record the snapshot folder and the command in the state of play.
 
 **Find non-writing blockers on day one.** These cause most last-minute crises:
 
@@ -144,7 +154,7 @@ Unless the author asks for a rewrite or a different tone, every edit keeps the o
 
 ### Make every change visible and reversible
 
-- **Never overwrite.** Write the next version as a new file, then move the previous version to `drafts/` without overwriting anything there (`mv -n`). Do not move or edit a file that is open in Word (check for `~$` lock files); say so and leave it.
+- **Never overwrite.** Write the next version as a new file, then move the previous version to `drafts/` without overwriting anything there (`mv -n`). Do not move or edit a file that is open in Word (check for `~$` lock files); say so and leave it. Run a snapshot first, so the state you started from is kept even if a collaborator saves over the file later.
 - **Start from the author's latest file**, not Claude's last output, whenever the author has edited in between. For spreadsheets and trackers the PI edits by hand, change only the specific cells (load the existing workbook and write those cells); never rebuild the sheet.
 - **Word documents:** make edits as tracked changes, with a comment on any edit that is not self-explanatory. Ask the PI once which author name to use ("Claude" by default; some PIs want their own name or a label such as "Budget reconciliation") and record it in the decisions log. When porting another person's edits from a separate copy, attribute them as "<Name> (via Claude)". If a docx skill with a redlining workflow is available, use it.
 - **Citations in managed documents:** when the document uses a reference manager (Zotero, EndNote, Mendeley), never type citations as plain text. Insert a tracked placeholder such as `(CITE: Author Year, topic)` and give the PI the list to insert as live fields. Problems in the reference manager's data (a wrong year, an abstract full of unrelated text) are fixed in the library and then refreshed, not in the document XML, or the next refresh brings them back. Without a reference manager, type citations in the house style as tracked changes, only for works with a verified entry in `library.bib`, and rebuild the reference list from it.
@@ -232,5 +242,6 @@ Plan at least two full review rounds before the deadline, plus a last pass on th
 - Page count checked with substituted fonts or with the reference list still inside the project description.
 - Character-limited fields filled to within a few characters, then edited.
 - Reviewing an outdated synced copy instead of the canonical file.
+- A collaborator's in-place edit to a `_vN` file saved over earlier work, with no snapshot to compare against.
 - Facts from a research-agent report used without checking the primary source.
 - Edits that quietly flatten the author's voice into generic prose.

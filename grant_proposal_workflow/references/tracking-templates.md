@@ -11,6 +11,7 @@ Short, plain files the project keeps up to date. Store them in `00_admin/notes/`
 **Version of record:** anything already uploaded or entered by someone else (e.g., budget entered by sponsored programs on <date>)
 **Documents:** table of each required document → current file → status → owner (PI / Claude / sponsored programs / collaborator)
 **Lives only in the submission system:** biosketch, current & pending, collaborators list, data-plan web form, cover-sheet certifications → status
+**Snapshots:** <snapshot folder> (outside the shared folder); command `python3 <path>/snapshot.py <shared> <snapshots> --tz <zone>`; scheduled daily run: yes / no
 **Bibliography:** reference manager (<which>, latest export <date>) or local library in `98_bibliography/`; inbox last processed <date>
 **Sub-workflow notes:** letters → <path>; budget → <path>
 **Blocking, not writing:** registrations, letters, approvals, recordings
